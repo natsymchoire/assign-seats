@@ -1,0 +1,3553 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>National Symphony Chorus Ireland - App For Allocating Seating</title>
+    <style>
+        :root {
+            font-family: system-ui, Segoe UI, Arial, sans-serif;
+            color: #172238;
+            background: #f3f6fb
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0
+        }
+
+        button,
+        input,
+        select {
+            font: inherit
+        }
+
+        button {
+            cursor: pointer
+        }
+
+        header {
+            background: #d97706;
+            color: #000000;
+            padding: 15px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap
+        }
+
+        .header-title-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            text-align: center;
+            gap: 2px
+        }
+
+        .header-line-1 {
+            font-family: Arial, sans-serif;
+            font-variant: small-caps;
+            font-weight: 700;
+            font-size: 25px;
+            letter-spacing: 0.5px;
+            color: #000000;
+            line-height: 1.05
+        }
+
+        .header-line-2 {
+            font-family: Arial, sans-serif;
+            font-variant: small-caps;
+            font-weight: 700;
+            font-size: 21px;
+            letter-spacing: 0.4px;
+            color: #000000;
+            line-height: 1.05
+        }
+
+        /* Hide the seating controls until authentication. */
+        .toolbar[hidden] {
+            display: none;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            background: #f9e4be;
+            border-bottom: 1px solid #dfba80;
+            flex-wrap: wrap
+        }
+
+        .toolbar label {
+            font-size: 13px;
+            font-weight: 600
+        }
+
+        .toolbar select,
+        .toolbar button,
+        .actions button,
+        .panel button,
+        .toolbar input {
+            border: 1px solid #c8d3e0;
+            background: white;
+            border-radius: 8px;
+            padding: 8px 10px;
+            color: #1c2d43
+        }
+
+        .toolbar button:disabled,
+        .actions button:disabled {
+            opacity: .4;
+            cursor: default
+        }
+
+        /* Keep the seating workspace hidden until authentication. */
+        .workspace[hidden] {
+            display: none;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 290px minmax(0, 1fr);
+            gap: 16px;
+            padding: 16px;
+            max-width: 1900px;
+            margin: auto
+        }
+
+        .panel,
+        .stage {
+            border: 1px solid #dbe3eb;
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 3px 12px #162c4c0a
+        }
+
+        .panel {
+            padding: 15px;
+            min-width: 0
+        }
+
+        .panel h2 {
+            font-size: 17px;
+            margin: 0 0 8px
+        }
+
+        .muted {
+            color: #5e7085;
+            font-size: 12px;
+            line-height: 1.5
+        }
+
+        .filters button {
+            padding: 5px 9px;
+            font-size: 12px
+        }
+
+        .token-list {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            max-height: 56vh;
+            overflow: auto;
+            padding: 2px
+        }
+
+        .token {
+            border: 2px solid #dde4ec;
+            border-radius: 9px;
+            background: #fafcff;
+            display: flex;
+            align-items: center;
+            padding: 6px;
+            min-width: 0
+        }
+
+        .token.selected {
+            border-color: #2454c7;
+            background: #e8f0ff;
+            box-shadow: 0 0 0 2px #acc5ff
+        }
+
+        .coin {
+            height: 58px;
+            width: 58px;
+            border-radius: 4px;
+            background: var(--tone);
+            border: 1px solid #8795a5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            color: #10223c;
+            line-height: 1;
+        }
+
+        /* White timbre arc inside an unallocated singer token */
+
+        .coin-timbre-arc {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .coin strong {
+            font-size: 13px
+        }
+
+        .coin small {
+            font-size: 9px;
+            font-weight: 700;
+            margin-bottom: 2px
+        }
+
+        .heightbar {
+            position: absolute;
+            right: 5px;
+            bottom: 5px;
+            width: 5px;
+            height: var(--bar);
+            background: #ffffff;
+            border: 1px solid #8795a5;
+            border-radius: 2px;
+        }
+
+        .stage {
+            padding: 16px;
+            min-width: 0
+        }
+
+        .stage-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: start
+        }
+
+        .stage h2 {
+            font-size: 19px;
+            margin: 0
+        }
+
+        .stats {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        .stat {
+            background: #eff4fa;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 12px
+        }
+
+        .stat b {
+            font-size: 15px
+        }
+
+        .stage-note {
+            font-size: 12px;
+            color: #52647b;
+            margin: 10px 0
+        }
+
+        /* Keep inactive rehearsal/performance spaces hidden */
+
+        .layout[hidden] {
+            display: none;
+        }
+
+        .layout {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+
+            width: 100%;
+            height: 600px;
+
+            overflow-x: auto;
+            overflow-y: auto;
+
+            padding: 12px 0;
+        }
+
+        /* In Landscape View, begin at the left edge of the balcony
+   so that all four sections remain accessible by scrolling. */
+
+        .layout.landscape {
+            justify-content: flex-start;
+            align-items: flex-start;
+        }
+
+        /* Align rows E, D and C across all four seating zones. */
+
+        .nch-layout.landscape .section.centre {
+            margin-top: calc(64px * var(--seating-zoom, 1));
+        }
+
+        .layout.landscape {
+            flex-direction: row
+        }
+
+
+        .section {
+            min-width: 0;
+            position: relative
+        }
+
+        .section>div {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #516176;
+            margin-bottom: 4px
+        }
+
+        .section svg {
+            display: block;
+            width: 100%;
+            height: auto;
+            overflow: visible
+        }
+
+        /* Keep all seating sections at their natural proportions.#
+   Do not shrink the outer sections to fit the screen. */
+
+        .nch-layout .section.side {
+            flex: 0 0 608px;
+        }
+
+        .nch-layout .section.centre {
+            flex: 0 0 916px;
+        }
+
+        .seat {
+            cursor: pointer
+        }
+
+        .seat rect {
+            stroke: #8795a5;
+            stroke-width: 1.1
+        }
+
+        .seat.selected rect {
+            stroke: #152a89;
+            stroke-width: 3
+        }
+
+        .seat text {
+            pointer-events: none;
+            font-family: system-ui, Arial, sans-serif
+        }
+
+        .seat:hover rect {
+            stroke: #1d58ba;
+            stroke-width: 2.5
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 15px
+        }
+
+        .actions button {
+            font-size: 12px
+        }
+
+        .section.centre .svgwrap {
+            width: 100%
+        }
+
+        .footnote {
+            padding: 12px 20px;
+            color: #64748b;
+            font-size: 11px
+        }
+
+        #status {
+            min-height: 22px;
+            font-size: 12px;
+            color: #255480;
+            font-weight: 600;
+            margin-top: 10px
+        }
+
+        .search {
+            width: 100%;
+            border: 1px solid #c9d5e1;
+            border-radius: 8px;
+            padding: 9px
+        }
+
+        .legend {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            font-size: 12px;
+            color: #5d6e83;
+            margin-top: 8px
+        }
+
+        .dot {
+            display: inline-block;
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            vertical-align: middle;
+            margin-right: 4px
+        }
+
+        .empty {
+            font-size: 12px;
+            color: #657790;
+            padding: 12px
+        }
+
+        @media(max-width:950px) {
+            .workspace {
+                grid-template-columns: 1fr
+            }
+
+            .token-list {
+                max-height: 210px;
+                grid-template-columns: repeat(4, minmax(0, 1fr))
+            }
+
+            .layout {
+                min-height: 300px
+            }
+
+            .stage {
+                overflow: auto
+            }
+
+            .layout.landscape {
+                min-width: 720px
+            }
+        }
+
+        @media(max-width:550px) {
+            .token-list {
+                grid-template-columns: repeat(2, minmax(0, 1fr))
+            }
+        }
+
+        .settings-menu {
+            position: relative;
+            font-size: 13px;
+            font-weight: 600
+        }
+
+        .settings-menu summary {
+            cursor: pointer;
+            border: 1px solid #c8d3e0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: #fff;
+            list-style: revert
+        }
+
+        .settings-menu[open] summary {
+            background: #e8f2ff
+        }
+
+        .settings-content {
+            position: absolute;
+            z-index: 30;
+            right: 0;
+            top: calc(100% + 5px);
+            width: 300px;
+            max-width: 90vw;
+            background: #fff;
+            border: 1px solid #c8d3e0;
+            box-shadow: 0 10px 30px #1722382b;
+            border-radius: 10px;
+            padding: 14px
+        }
+
+        .settings-content #divisionControls {
+            display: grid;
+            gap: 8px;
+            margin-top: 12px
+        }
+
+        .settings-content #divisionControls label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px
+        }
+
+        .settings-content #divisionControls select {
+            min-width: 110px
+        }
+
+        /* Read-only work name retrieved from H2 of the selected project sheet. */
+        .project-work-name {
+            display: inline-flex;
+            align-items: center;
+            min-height: 39px;
+            max-width: 360px;
+            padding: 7px 12px;
+            border: 1px solid #a8b8c9;
+            border-radius: 8px;
+            background: #e6edf5;
+            color: #203d5a;
+            font-size: 13px;
+            font-weight: 650;
+            overflow-wrap: anywhere;
+        }
+
+        /* Print Options dropdown */
+
+        /* Position Print Options at the right-hand end of the toolbar */
+
+        #printOptionsMenu {
+            margin-left: auto;
+            order: 10;
+        }
+
+        #printOptionsMenu .settings-content {
+            width: 245px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        #printOptionsMenu .settings-content button {
+            width: 100%;
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #c8d3e0;
+            border-radius: 7px;
+            background: #ffffff;
+            cursor: pointer;
+        }
+
+        #nchPrintButtons,
+        #kbrPrintButtons,
+        #studioPrintButtons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        #nchPrintButtons[hidden],
+        #kbrPrintButtons[hidden],
+        #studioPrintButtons[hidden] {
+            display: none;
+        }
+
+        /* Partial-print settings stay closed until explicitly requested. */
+        #printOptionsMenu .settings-content #partialPrintToggle {
+            width: calc(100% - 30px);
+            align-self: center;
+            padding: 7px 9px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            background: #edf3f9;
+            border-color: #bacddd;
+        }
+
+        #printOptionsMenu .settings-content #partialPrintToggle:hover,
+        #printOptionsMenu .settings-content #partialPrintToggle[aria-expanded="true"] {
+            background: #dcebf8;
+        }
+
+        #partialPrintControls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        #partialPrintControls[hidden],
+        .partial-print-buttons[hidden] {
+            display: none;
+        }
+
+        .partial-print-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .print-paper-choice {
+            border: 1px solid #d5dfe9;
+            border-radius: 8px;
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        .print-paper-choice legend {
+            font-weight: 700;
+            padding: 0 4px;
+        }
+
+        .print-paper-choice label {
+            margin-right: 12px;
+            white-space: nowrap;
+        }
+
+        .print-mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 2px 0 6px;
+            color: #172238;
+        }
+
+        .print-mode-toggle input {
+            margin: 0;
+        }
+
+        #printOptionsMenu .settings-content button:hover {
+            background: #e8f2ff;
+        }
+
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin: 10px 0
+        }
+
+        .filters button.active {
+            background: #cce5ff;
+            border-color: #327ac0
+        }
+
+        /* Temporary information bubble for singer tokens */
+        .singer-info-bubble {
+            position: fixed;
+            z-index: 2000;
+            width: max-content;
+            max-width: 260px;
+            padding: 12px 15px;
+            background: #ffffff;
+            border: 1px solid #8795a5;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.18);
+            color: #172238;
+            font-size: 13px;
+            line-height: 1.6;
+            pointer-events: none;
+        }
+
+        .singer-info-bubble[hidden] {
+            display: none;
+        }
+
+        .singer-info-bubble strong {
+            font-weight: 700;
+        }
+
+        /* Seating plan magnification controls */
+        /* Small outlined panel for magnification controls in the toolbar */
+
+        .zoom-toolbar-panel {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 10px;
+            background: #ffffff;
+            border: 1px solid #dfba80;
+            border-radius: 8px;
+        }
+
+        .zoom-toolbar-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #172238;
+            white-space: nowrap;
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .zoom-controls button {
+            background: #ffffff;
+            color: #172238;
+            border: 1px solid #c8d3e0;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .zoom-controls button:hover {
+            background: #e8f2ff;
+            border-color: #4686d1;
+        }
+
+        #zoomLevel {
+            min-width: 48px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: #172238;
+        }
+
+        /* Seating diagram scrollbar colours */
+
+        .layout {
+            scrollbar-color: #7040A0 #E0D1F0;
+            scrollbar-width: auto;
+        }
+
+        /* Chrome and other WebKit-based browsers */
+
+        .layout::-webkit-scrollbar {
+            width: 14px;
+            height: 14px;
+        }
+
+        .layout::-webkit-scrollbar-track {
+            background: #E0D1F0;
+            border-radius: 8px;
+        }
+
+        .layout::-webkit-scrollbar-thumb {
+            background: #7040A0;
+            border-radius: 8px;
+            border: 2px solid #E0D1F0;
+        }
+
+        .layout::-webkit-scrollbar-thumb:hover {
+            background: #542C80;
+        }
+
+        /* Studio diagrams keep their seat proportions at all zoom levels. */
+        .studio-layout .section {
+            flex: 0 0 auto;
+        }
+
+        /* Kevin Barry Room seating geometry */
+        .kbr-layout .section {
+            flex: 0 0 2580px;
+            width: 2580px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="header-title-block">
+            <div class="header-line header-line-1">
+                National Symphony Chorus Ireland
+            </div>
+            <div class="header-line header-line-2">
+                App For Allocating Seating
+            </div>
+        </div>
+
+    </header>
+
+    <div class="toolbar" id="seatingToolbar" hidden>
+        <!-- Project selection -->
+
+        <label for="projectSelect">
+            Select Project
+        </label>
+
+        <select id="projectSelect">
+            <option value="Project1" selected>Project 1</option>
+            <option value="Project2">Project 2</option>
+            <option value="Project3">Project 3</option>
+        </select>
+        <output class="project-work-name" id="projectWorkName" aria-live="polite"
+            title="Work named in cell H2 of the selected project sheet">Loading work name…</output>
+
+        <!-- Rehearsal and performance space selection -->
+
+        <label for="performanceSpace">
+            Choose Rehearsal/Performance Space
+        </label>
+
+        <select id="performanceSpace">
+            <option value="nch" selected>
+                National Concert Hall
+            </option>
+
+            <option value="kevin-barry-5t">
+                Kevin Barry 5T
+            </option>
+            <option value="kevin-barry-6t">
+                Kevin Barry 6T
+            </option>
+
+            <option value="studio-portrait">
+                The Studio (Portrait)
+            </option>
+            <option value="studio-landscape">
+                The Studio (Landscape)
+            </option>
+        </select>
+
+        <!-- Printing options -->
+
+        <details class="settings-menu" id="printOptionsMenu">
+            <summary>Print Options</summary>
+
+            <div class="settings-content">
+
+                <label class="print-mode-toggle">
+                    <input type="checkbox" id="monoPrintMode">
+                    Monochrome-friendly print
+                </label>
+
+                <label class="print-mode-toggle">
+                    <input type="checkbox" id="omitPrintIndicators">
+                    Omit timbre and height indicators
+                </label>
+
+                <label class="print-mode-toggle" id="printInitialsLabel" style="margin-left:18px; opacity:0.5;">
+                    <input type="checkbox" id="printSingerInitials" disabled>
+                    Include singer's initials
+                </label>
+
+                <div id="nchPrintButtons">
+                    <button type="button" id="printNchFullA3Btn">Print Full Room (A3)</button>
+                </div>
+                <div id="kbrPrintButtons" hidden>
+                    <button type="button" id="printKbrFullA3Btn">Print Full Room (A3)</button>
+                </div>
+                <div id="studioPrintButtons" hidden>
+                    <button type="button" id="printStudioFullA3Btn">Print Full Room (A3)</button>
+                </div>
+
+                <button type="button" id="partialPrintToggle" aria-expanded="false"
+                    aria-controls="partialPrintControls">Print Partial Zones/Blocks</button>
+
+                <div id="partialPrintControls" hidden>
+                    <fieldset class="print-paper-choice">
+                        <legend>Paper size for partial prints</legend>
+                        <label><input type="radio" name="partialPrintPaper" value="A4" checked> A4</label>
+                        <label><input type="radio" name="partialPrintPaper" value="A3"> A3</label>
+                    </fieldset>
+
+                    <div id="nchPartialPrintButtons" class="partial-print-buttons">
+                        <button type="button" id="printRedBtn">Print Red Section</button>
+                        <button type="button" id="printCentreBtn">Print Blue/Orange Section</button>
+                        <button type="button" id="printGreenBtn">Print Green Section</button>
+                    </div>
+                    <div id="kbrPartialPrintButtons" class="partial-print-buttons" hidden>
+                        <button type="button" id="printKbrZone1Btn">Print Zone 1</button>
+                        <button type="button" id="printKbrZone2Btn">Print Zone 2</button>
+                        <button type="button" id="printKbrZone3Btn">Print Zone 3</button>
+                        <button type="button" id="printKbrZone4Btn">Print Zone 4</button>
+                    </div>
+                    <div id="studioPartialPrintButtons" class="partial-print-buttons" hidden>
+                        <button type="button" id="printStudioLeftBtn">Print Left Block</button>
+                        <button type="button" id="printStudioRightBtn">Print Right Block</button>
+                    </div>
+                </div>
+
+            </div>
+        </details>
+
+        <details class="settings-menu">
+            <summary>Voice subdivisions</summary>
+            <div class="settings-content">
+                <div class="muted">Choose subdivisions separately for each voice. Normally leave all four at one group.
+                </div>
+                <div id="divisionControls"></div>
+            </div>
+        </details>
+
+        <!-- Seating plan magnification controls -->
+
+        <div class="zoom-toolbar-panel">
+
+            <span class="zoom-toolbar-label">
+                Adjust Size of Seating Plan
+            </span>
+
+            <div class="zoom-controls">
+
+                <button id="zoomOutBtn" type="button" title="Reduce magnification">
+                    −
+                </button>
+
+                <span id="zoomLevel">100%</span>
+
+                <button id="zoomInBtn" type="button" title="Increase magnification">
+                    +
+                </button>
+
+                <button id="zoomResetBtn" type="button" title="Restore normal magnification">
+                    Reset
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Seating Manager login panel -->
+    <div id="seatingLoginPanel" style="padding:20px; background:#ffffff; border-bottom:1px solid #dbe3eb;">
+        <div style="max-width:420px; margin:auto;">
+            <h2>Seating Manager Login</h2>
+
+            <label for="seatingUsername">Username</label>
+            <input id="seatingUsername" type="text" autocomplete="username"
+                style="display:block; width:100%; padding:9px; margin:6px 0 14px;">
+
+            <label for="seatingCode">Google Authenticator Code</label>
+            <input id="seatingCode" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code"
+                style="display:block; width:100%; padding:9px; margin:6px 0 14px;">
+
+            <button id="seatingLoginButton" type="button" onclick="signInToSeatingManager()">
+                Sign In
+            </button>
+
+            <div id="seatingLoginStatus" role="status" style="margin-top:12px;"></div>
+        </div>
+    </div>
+
+    <main class="workspace" id="seatingWorkspace" hidden>
+        <aside class="panel">
+            <h2>Singers awaiting a seat</h2>
+            
+            <div class="muted">Show singers from these voice groups:</div>
+
+            <div class="filters" id="voiceFilters"></div>
+            <input class="search" id="search" placeholder="Find a choir number" inputmode="numeric">
+            <div class="token-list" id="tokens"></div>
+        </aside>
+
+        <section class="stage">
+            <div class="stage-top">
+                <div>
+                    <h2>Seating plan</h2>
+                    <p class="stage-note">Select a singer's token by clicking on it (either from the unallocated pool, or from a seat that they are already shown as occupying). Move the cursor to the seat you want that person to occupy & click again. If you are moving them to a seat that is already occupied by someone else, clicking on it will cause the two token to swap positions.</p>
+                </div>
+
+                <div class="stats">
+                    <div class="stat"><b id="assignedCount">0</b> placed</div>
+                    <div class="stat"><b id="vacantCount">0</b> empty seats</div>
+                    <div class="stat"><b id="pendingCount">0</b> unallocated tokens</div>
+                </div>
+            </div>
+
+            <div class="layout stacked" id="layout">
+                <div class="section side" id="nchRedSection">
+                    <div>RED</div>
+                    <div class="svgwrap" id="nchRedSvg"></div>
+                </div>
+                <div class="section centre" id="nchCentreSection">
+                    <div>BLUE + ORANGE · SHARED CENTRAL BLOCK</div>
+                    <div class="svgwrap" id="nchCentreSvg"></div>
+                </div>
+                <div class="section side" id="nchGreenSection">
+                    <div>GREEN</div>
+                    <div class="svgwrap" id="nchGreenSvg"></div>
+                </div>
+            </div>
+
+            <!-- The Studio: Portrait and Landscape share one drawing surface. -->
+            <div class="layout studio-layout landscape" id="studioLayout" hidden>
+                <div class="section" id="studioSection">
+                    <div id="studioHeading">THE STUDIO (PORTRAIT)</div>
+                    <div class="svgwrap" id="studioSvg"></div>
+                </div>
+            </div>
+
+            <!-- Kevin Barry Room seating plan -->
+            <div class="layout kbr-layout landscape" id="kbrLayout" hidden>
+                <div class="section" id="kbrSection">
+                    <div>KEVIN BARRY ROOM</div>
+                    <div class="svgwrap" id="kbrSvg"></div>
+                </div>
+            </div>
+
+            <div class="legend"><span><i class="dot" style="background:#f2288e"></i>Soprano</span><span><i class="dot"
+                        style="background:#0aaf57"></i>Alto</span><span><i class="dot"
+                        style="background:#2662e5"></i>Tenor</span><span><i class="dot"
+                        style="background:#e96b16"></i>Bass</span>
+                <span>White left-hand arc = vocal timbre · White right-hand bar = height. Yellow triangle in top r/h corner = singer attending rehearsal, but who will not be taking part in performance.</span>
+            </div>
+
+            <div id="status" role="status" aria-live="polite"></div>
+
+            <div class="actions"><button id="undoBtn" disabled>↶ Undo last move</button>
+                <button id="unseatBtn" disabled>Return selected singer to pool</button>
+                <button id="saveBtn">Save Seating Plan</button>
+                <button id="loadBtn">Load Last Saved Plan</button>
+                <button id="restorePreviousBtn" type="button">Restore Previous Version</button>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Temporary singer information bubble -->
+    <div id="singerInfoBubble" class="singer-info-bubble" role="tooltip" hidden>
+        <div id="singerInfoBubbleContent"></div>
+    </div>
+
+    <footer class="footnote"></footer>
+
+    <script>
+        'use strict';
+
+        // Cloudflare Worker for the NSCI Seating Allocation Manager.
+        const SEATING_WORKER_URL =
+            'https://nsci-seating-manager.natsymphchorus.workers.dev';
+
+        // Active authenticated Seating Manager session.
+        // Kept in memory; never hardcoded into the application.
+        let seatingSessionToken = null;
+        let seatingSessionExpiresAt = null;
+
+        // Live singer records retrieved from Google Sheets.
+        let liveProjectSingers = [];
+
+        // Singers eligible for allocation in the current project.
+        let participatingProjectSingers = [];
+
+        // Check live singer records for duplicate choir numbers.
+        function findDuplicateChoirNumbers(singerList) {
+            const seen = new Set();
+            const duplicates = new Set();
+
+            for (const singer of singerList) {
+                if (seen.has(singer.number)) {
+                    duplicates.add(singer.number);
+                }
+                seen.add(singer.number);
+            }
+
+            return [...duplicates];
+        }
+
+        // Apply validated live singer records to the seating application.
+        function applyLiveProjectSingers(singerList) {
+            singers = [...singerList];
+
+            byNumber = Object.fromEntries(
+                singers.map(singer => [singer.number, singer])
+            );
+
+            render();
+        }
+
+        // Sign in using Google Authenticator.
+        async function signInToSeatingManager() {
+            const username =
+                document.getElementById('seatingUsername').value.trim();
+
+            const code =
+                document.getElementById('seatingCode').value.trim();
+
+            const status =
+                document.getElementById('seatingLoginStatus');
+
+            const button =
+                document.getElementById('seatingLoginButton');
+
+            if (!username || !/^\d{6}$/.test(code)) {
+                status.textContent =
+                    'Please enter your username and six-digit Authenticator code.';
+                return;
+            }
+
+            button.disabled = true;
+            status.textContent = 'Signing in...';
+
+            try {
+                const response = await fetch(
+                    SEATING_WORKER_URL + '/auth/login',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ username, code })
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    status.textContent =
+                        result.error || 'Sign-in unsuccessful.';
+                    return;
+                }
+
+                seatingSessionToken = result.token;
+                seatingSessionExpiresAt = result.expiresAt;
+
+                // Test retrieval of the selected project's live singer records.
+                try {
+                    const project = document.getElementById('projectSelect').value;
+
+                    const liveSingers = await fetchProjectSingers(
+                        project,
+                        seatingSessionToken
+                    );
+
+                    // Retain the live records for subsequent processing.
+                    liveProjectSingers = liveSingers;
+
+                    // Check whether permanent member IDs were preserved.
+                    const missingMemberIds = liveProjectSingers.filter(
+                        singer => !singer.memberId
+                    );
+
+                    console.log(
+                        'Singers without permanent member IDs:',
+                        missingMemberIds.length
+                    );
+
+                    // Include concert participants and rehearsal-only singers.
+                    participatingProjectSingers = liveProjectSingers.filter(
+                        singer => singer.participation === 1 ||
+                            singer.participation === 2
+                    );
+
+                    console.log(
+                        'Singers eligible for seating:',
+                        participatingProjectSingers.length
+                    );
+
+                    // Count singers by participation status.
+                    const participationCounts = {
+                        concert: liveProjectSingers.filter(s => s.participation === 2).length,
+                        rehearsalOnly: liveProjectSingers.filter(s => s.participation === 1).length,
+                        notParticipating: liveProjectSingers.filter(s => s.participation === 0).length
+                    };
+
+                    console.log('Live participation counts:', participationCounts);
+
+                    // Check the live project data for duplicate choir numbers.
+                    const duplicates = findDuplicateChoirNumbers(liveProjectSingers);
+
+                    if (duplicates.length > 0) {
+                        console.error('Duplicate choir numbers found:', duplicates);
+                    } else {
+                        console.log('Choir number validation passed: no duplicates.');
+                    }
+
+                    console.log(
+                        'Live Google Sheets data loaded:',
+                        project,
+                        liveSingers.length,
+                        'singers'
+                    );
+
+                    // Activate live singer data only when validation succeeds.
+                    if (duplicates.length === 0 &&
+                        missingMemberIds.length === 0 &&
+                        participatingProjectSingers.length > 0) {
+
+                        applyLiveProjectSingers(participatingProjectSingers);
+
+                        console.log(
+                            'Live seating data activated:',
+                            participatingProjectSingers.length,
+                            'singers'
+                        );
+                    }
+
+                } catch (error) {
+                    console.error('Live singer data retrieval failed:', error);
+                }
+
+                document.getElementById('seatingCode').value = '';
+
+                status.textContent = 'Signed in successfully as ' +
+                    result.username + '.';
+
+                // Reveal the seating workspace after successful authentication.
+                document.getElementById('seatingWorkspace').hidden = false;
+                document.getElementById('seatingLoginPanel').hidden = true;
+                document.getElementById('seatingToolbar').hidden = false;
+
+            } catch (error) {
+                console.error('Seating login error:', error);
+                status.textContent =
+                    'Unable to contact the authentication service.';
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        const NCH_SEATS = [
+            { "manager": "A01", "member": "C1", "id": "red-C1" },
+            { "manager": "A02", "member": "C2", "id": "red-C2" },
+            { "manager": "A03", "member": "C3", "id": "red-C3" },
+            { "manager": "A04", "member": "C4", "id": "red-C4" },
+            { "manager": "A05", "member": "C5", "id": "red-C5" },
+            { "manager": "A06", "member": "C6", "id": "red-C6" },
+            { "manager": "A07", "member": "C7", "id": "red-C7" },
+            { "manager": "A08", "member": "C8", "id": "red-C8" },
+            { "manager": "A09", "member": "C9", "id": "red-C9" },
+            { "manager": "B01", "member": "D1", "id": "red-D1" },
+            { "manager": "B02", "member": "D2", "id": "red-D2" },
+            { "manager": "B03", "member": "D3", "id": "red-D3" },
+            { "manager": "B04", "member": "D4", "id": "red-D4" },
+            { "manager": "B05", "member": "D5", "id": "red-D5" },
+            { "manager": "B06", "member": "D6", "id": "red-D6" },
+            { "manager": "B07", "member": "D7", "id": "red-D7" },
+            { "manager": "B08", "member": "D8", "id": "red-D8" },
+            { "manager": "B09", "member": "D9", "id": "red-D9" },
+            { "manager": "B10", "member": "D10", "id": "red-D10" },
+            { "manager": "C01", "member": "E1", "id": "red-E1" },
+            { "manager": "C02", "member": "E2", "id": "red-E2" },
+            { "manager": "C03", "member": "E3", "id": "red-E3" },
+            { "manager": "C04", "member": "E4", "id": "red-E4" },
+            { "manager": "C05", "member": "E5", "id": "red-E5" },
+            { "manager": "C06", "member": "E6", "id": "red-E6" },
+            { "manager": "C07", "member": "E7", "id": "red-E7" },
+            { "manager": "C08", "member": "E8", "id": "red-E8" },
+            { "manager": "C09", "member": "E9", "id": "red-E9" },
+            { "manager": "C10", "member": "E10", "id": "red-E10" },
+            { "manager": "C11", "member": "E11", "id": "red-E11" },
+            { "manager": "D01", "member": "F1", "id": "red-F1" },
+            { "manager": "D02", "member": "F2", "id": "red-F2" },
+            { "manager": "D03", "member": "F3", "id": "red-F3" },
+            { "manager": "D04", "member": "F4", "id": "red-F4" },
+            { "manager": "E01", "member": "A1", "id": "blue-A1" },
+            { "manager": "E02", "member": "A2", "id": "blue-A2" },
+            { "manager": "E03", "member": "A3", "id": "blue-A3" },
+            { "manager": "E04", "member": "A4", "id": "blue-A4" },
+            { "manager": "E05", "member": "A5", "id": "blue-A5" },
+            { "manager": "E06", "member": "A6", "id": "blue-A6" },
+            { "manager": "F01", "member": "B1", "id": "blue-B1" },
+            { "manager": "F02", "member": "B2", "id": "blue-B2" },
+            { "manager": "F03", "member": "B3", "id": "blue-B3" },
+            { "manager": "F04", "member": "B4", "id": "blue-B4" },
+            { "manager": "F05", "member": "B5", "id": "blue-B5" },
+            { "manager": "F06", "member": "B6", "id": "blue-B6" },
+            { "manager": "G01", "member": "C1", "id": "blue-C1" },
+            { "manager": "G02", "member": "C2", "id": "blue-C2" },
+            { "manager": "G03", "member": "C3", "id": "blue-C3" },
+            { "manager": "G04", "member": "C4", "id": "blue-C4" },
+            { "manager": "G05", "member": "C5", "id": "blue-C5" },
+            { "manager": "G06", "member": "C6", "id": "blue-C6" },
+            { "manager": "H01", "member": "D1", "id": "blue-D1" },
+            { "manager": "H02", "member": "D2", "id": "blue-D2" },
+            { "manager": "H03", "member": "D3", "id": "blue-D3" },
+            { "manager": "H04", "member": "D4", "id": "blue-D4" },
+            { "manager": "H05", "member": "D5", "id": "blue-D5" },
+            { "manager": "H06", "member": "D6", "id": "blue-D6" },
+            { "manager": "H07", "member": "D7", "id": "blue-D7" },
+            { "manager": "H08", "member": "D8", "id": "blue-D8" },
+            { "manager": "J01", "member": "E1", "id": "blue-E1" },
+            { "manager": "J02", "member": "E2", "id": "blue-E2" },
+            { "manager": "J03", "member": "E3", "id": "blue-E3" },
+            { "manager": "J04", "member": "E4", "id": "blue-E4" },
+            { "manager": "J05", "member": "E5", "id": "blue-E5" },
+            { "manager": "J06", "member": "E6", "id": "blue-E6" },
+            { "manager": "J07", "member": "E7", "id": "blue-E7" },
+            { "manager": "J08", "member": "E8", "id": "blue-E8" },
+            { "manager": "K01", "member": "A1", "id": "orange-A1" },
+            { "manager": "K02", "member": "A2", "id": "orange-A2" },
+            { "manager": "K03", "member": "A3", "id": "orange-A3" },
+            { "manager": "K04", "member": "A4", "id": "orange-A4" },
+            { "manager": "K05", "member": "A5", "id": "orange-A5" },
+            { "manager": "K06", "member": "A6", "id": "orange-A6" },
+            { "manager": "M01", "member": "B1", "id": "orange-B1" },
+            { "manager": "M02", "member": "B2", "id": "orange-B2" },
+            { "manager": "M03", "member": "B3", "id": "orange-B3" },
+            { "manager": "M04", "member": "B4", "id": "orange-B4" },
+            { "manager": "M05", "member": "B5", "id": "orange-B5" },
+            { "manager": "M06", "member": "B6", "id": "orange-B6" },
+            { "manager": "N01", "member": "C1", "id": "orange-C1" },
+            { "manager": "N02", "member": "C2", "id": "orange-C2" },
+            { "manager": "N03", "member": "C3", "id": "orange-C3" },
+            { "manager": "N04", "member": "C4", "id": "orange-C4" },
+            { "manager": "N05", "member": "C5", "id": "orange-C5" },
+            { "manager": "N06", "member": "C6", "id": "orange-C6" },
+            { "manager": "P01", "member": "D1", "id": "orange-D1" },
+            { "manager": "P02", "member": "D2", "id": "orange-D2" },
+            { "manager": "P03", "member": "D3", "id": "orange-D3" },
+            { "manager": "P04", "member": "D4", "id": "orange-D4" },
+            { "manager": "P05", "member": "D5", "id": "orange-D5" },
+            { "manager": "P06", "member": "D6", "id": "orange-D6" },
+            { "manager": "P07", "member": "D7", "id": "orange-D7" },
+            { "manager": "P08", "member": "D8", "id": "orange-D8" },
+            { "manager": "Q01", "member": "E1", "id": "orange-E1" },
+            { "manager": "Q02", "member": "E2", "id": "orange-E2" },
+            { "manager": "Q03", "member": "E3", "id": "orange-E3" },
+            { "manager": "Q04", "member": "E4", "id": "orange-E4" },
+            { "manager": "Q05", "member": "E5", "id": "orange-E5" },
+            { "manager": "Q06", "member": "E6", "id": "orange-E6" },
+            { "manager": "Q07", "member": "E7", "id": "orange-E7" },
+            { "manager": "Q08", "member": "E8", "id": "orange-E8" },
+            { "manager": "R01", "member": "C1", "id": "green-C1" },
+            { "manager": "R02", "member": "C2", "id": "green-C2" },
+            { "manager": "R03", "member": "C3", "id": "green-C3" },
+            { "manager": "R04", "member": "C4", "id": "green-C4" },
+            { "manager": "R05", "member": "C5", "id": "green-C5" },
+            { "manager": "R06", "member": "C6", "id": "green-C6" },
+            { "manager": "R07", "member": "C7", "id": "green-C7" },
+            { "manager": "R08", "member": "C8", "id": "green-C8" },
+            { "manager": "R09", "member": "C9", "id": "green-C9" },
+            { "manager": "S01", "member": "D1", "id": "green-D1" },
+            { "manager": "S02", "member": "D2", "id": "green-D2" },
+            { "manager": "S03", "member": "D3", "id": "green-D3" },
+            { "manager": "S04", "member": "D4", "id": "green-D4" },
+            { "manager": "S05", "member": "D5", "id": "green-D5" },
+            { "manager": "S06", "member": "D6", "id": "green-D6" },
+            { "manager": "S07", "member": "D7", "id": "green-D7" },
+            { "manager": "S08", "member": "D8", "id": "green-D8" },
+            { "manager": "S09", "member": "D9", "id": "green-D9" },
+            { "manager": "S10", "member": "D10", "id": "green-D10" },
+            { "manager": "T01", "member": "E1", "id": "green-E1" },
+            { "manager": "T02", "member": "E2", "id": "green-E2" },
+            { "manager": "T03", "member": "E3", "id": "green-E3" },
+            { "manager": "T04", "member": "E4", "id": "green-E4" },
+            { "manager": "T05", "member": "E5", "id": "green-E5" },
+            { "manager": "T06", "member": "E6", "id": "green-E6" },
+            { "manager": "T07", "member": "E7", "id": "green-E7" },
+            { "manager": "T08", "member": "E8", "id": "green-E8" },
+            { "manager": "T09", "member": "E9", "id": "green-E9" },
+            { "manager": "T10", "member": "E10", "id": "green-E10" },
+            { "manager": "T11", "member": "E11", "id": "green-E11" },
+            { "manager": "V01", "member": "F1", "id": "green-F1" },
+            { "manager": "V02", "member": "F2", "id": "green-F2" },
+            { "manager": "V03", "member": "F3", "id": "green-F3" },
+            { "manager": "V04", "member": "F4", "id": "green-F4" }];
+
+        // Kevin Barry 5T: accepted 144-seat reference layout.
+        // Zones 1 and 4: 43 seats each, mirrored curved rows A-D.
+        // Zone 2: 27 seats, including two back-row extensions.
+        // Zone 3: 31 seats, including one back-row extension.
+        // Row E is the back row; its extensions bridge the corridors.
+        // Authentication and saved venue key remain unchanged.
+
+        const KBR_VIEWBOX_WIDTH = 2580;
+        const KBR_VIEWBOX_HEIGHT = 620;
+
+        const KBR_SEATS = [];
+        const KBR_GEOMETRY = [];
+
+        function addKbrSeat(zone, row, number, x, y, angle = 0) {
+            const id = `kbr-z${zone}-${row}${number}`;
+
+            KBR_SEATS.push({
+                manager: `Z${zone}-${row}${number}`,
+                member: `${row}${number}`,
+                id,
+                zone,
+                row,
+                number
+            });
+
+            KBR_GEOMETRY.push({
+                id,
+                zone,
+                row,
+                number,
+                x,
+                y,
+                angle
+            });
+        }
+
+        function addKbrRow(zone, row, points) {
+            points.forEach((point, index) => {
+                addKbrSeat(
+                    zone,
+                    row,
+                    index + 1,
+                    point.x,
+                    point.y,
+                    point.angle || 0
+                );
+            });
+        }
+
+        function mirrorKbrRow(points, axisX) {
+            return points
+                .map(point => ({
+                    x: axisX - point.x,
+                    y: point.y,
+                    angle: -(point.angle || 0)
+                }))
+                .sort((a, b) => a.x - b.x);
+        }
+
+        // The approved Zone 1 curves are derived from the elliptical
+        // reference row; Zone 4 mirrors those positions.
+
+        function makeKbrEllipseRow() {
+            const seats = [];
+
+            // Geometry of the elliptical curve.
+            const curveStartX = 0;
+            const curveEndX = 544;
+            const yFlat = 205;
+
+            // A more pronounced curve.
+            const curveDepth = 285;
+
+            // Seven curved seats, arranged from left to right.
+            // The final curved seat has more space before
+            // the first straight seat at x = 544.
+            const curvedX = [
+                109, 167, 229, 291, 353, 414, 477
+            ];
+
+            const q = curveEndX - curveStartX;
+
+            curvedX.forEach(x => {
+                const distance = curveEndX - x;
+
+                const root = Math.sqrt(
+                    q * q - distance * distance
+                );
+
+                // Elliptical curve, descending towards the left.
+                const y = yFlat + curveDepth * (1 - root / q);
+
+                // Rotation calculated from the tangent.
+                const slope =
+                    -curveDepth * distance / (q * root);
+
+                const angle =
+                    Math.atan(slope) * 180 / Math.PI;
+
+                seats.push({
+                    x,
+                    y: Math.round(y * 10) / 10,
+                    angle: Math.round(angle * 10) / 10
+                });
+            });
+
+            // The five straight seats remain unchanged.
+            [544, 608, 672, 736, 800].forEach(x => {
+                seats.push({
+                    x,
+                    y: yFlat,
+                    angle: 0
+                });
+            });
+
+            return seats;
+        }
+
+        const KBR_REFERENCE_ROW = makeKbrEllipseRow();
+
+        // Derive a row from the accepted Row C curve.
+        // Remove seats from the outer (left) end,
+        // then shift the remaining seats horizontally
+        // and vertically without altering their angles.
+
+        function deriveKbrRow(removeLeft, shiftX, shiftY) {
+            return KBR_REFERENCE_ROW
+                .slice(removeLeft)
+                .map(seat => ({
+                    x: seat.x + shiftX,
+                    y: seat.y + shiftY,
+                    angle: seat.angle
+                }));
+        }
+
+        const KBR_ZONE1_ROWS = {
+
+            // Row A: 10 seats, front.
+            // Two outer seats omitted.
+            A: deriveKbrRow(2, 0, 160).map((seat, index) => ({
+                ...seat,
+                y: seat.y + ([18, 14, 9, 4][index] || 0)
+            })),
+
+            // Row B: 12 seats.
+            // Same curve as Row C, 80 units further forward.
+            B: deriveKbrRow(0, 0, 80).map((seat, index) => ({
+                ...seat,
+                y: seat.y + ([18, 14, 9, 4][index] || 0)
+            })),
+
+            // Row C: 12 seats.
+            // Our established reference curve.
+            C: KBR_REFERENCE_ROW,
+
+            // Row D: 9 seats.
+            // Three outer seats omitted.
+            D: deriveKbrRow(3, 0, -80)
+
+            // Row E: no seats in Zone 1.
+        };
+
+        // Construct Zone 1.
+
+        Object.entries(KBR_ZONE1_ROWS).forEach(([row, points]) => {
+            addKbrRow(1, row, points);
+        });
+
+        // The middle zones have five regular rows.
+        // The front row is nearest the conductor.
+
+        const KBR_ROW_Y = {
+            A: 365,
+            B: 285,
+            C: 205,
+            D: 125,
+            E: 45
+        };
+
+        const KBR_MIDDLE_SPACING = 59;
+
+        // Zone 2: five regular seats per row,
+        // with two additional seats in Row E.
+        //
+        // The extra seats are above the corridors, not in them.
+
+        ['A', 'B', 'C', 'D', 'E'].forEach(row => {
+
+            if (row === 'E') {
+                // Extra back-row seat, above the Zone 1–2 corridor.
+                addKbrSeat(2, row, 1, 859, KBR_ROW_Y[row]);
+            }
+
+            for (let i = 0; i < 5; i++) {
+                addKbrSeat(
+                    2,
+                    row,
+                    i + (row === 'E' ? 2 : 1),
+                    918 + i * KBR_MIDDLE_SPACING,
+                    KBR_ROW_Y[row]
+                );
+            }
+
+            if (row === 'E') {
+                // Red X: bridging seat over Zone 2–3 gap.
+                addKbrSeat(2, row, 7, 1213, KBR_ROW_Y[row]);
+            }
+        });
+
+        // Zone 3: six regular seats per row,
+        // with one additional seat at the end of Row E.
+
+        ['A', 'B', 'C', 'D', 'E'].forEach(row => {
+
+            for (let i = 0; i < 6; i++) {
+                addKbrSeat(
+                    3,
+                    row,
+                    i + 1,
+                    1272 + i * KBR_MIDDLE_SPACING,
+                    KBR_ROW_Y[row]
+                );
+            }
+
+            if (row === 'E') {
+                // Blue X: bridging seat over Zone 3–4 corridor.
+                addKbrSeat(3, row, 7, 1626, KBR_ROW_Y[row]);
+            }
+        });
+
+        // Zone 4: mirror image of Zone 1.
+        //
+        // The mirroring constant includes the width of each
+        // seat so that the first straight chair starts at x=1685.
+
+        const KBR_MIRROR_AXIS = 2485;
+
+        Object.entries(KBR_ZONE1_ROWS).forEach(([row, points]) => {
+            addKbrRow(
+                4,
+                row,
+                mirrorKbrRow(points, KBR_MIRROR_AXIS)
+            );
+        });
+
+        // Both layouts share the accepted 5T geometry. The 6T layout
+        // inserts a regular column inside Zone 2, without altering the
+        // existing chair identities or either curved outer zone.
+        const KBR_6T_COLUMN_WIDTH = KBR_MIDDLE_SPACING;
+
+        const KBR_SEATS_6T = KBR_SEATS.map(seat => ({ ...seat }));
+        const KBR_GEOMETRY_6T = KBR_GEOMETRY.map(seat => {
+            let shift = 0;
+
+            if (seat.zone === 2) {
+                // Regular columns four/five shift right.
+                // In back Row E the initial bridging chair is E1.
+                const threshold = seat.row === 'E' ? 5 : 4;
+                if (seat.number >= threshold) {
+                    shift = KBR_6T_COLUMN_WIDTH;
+                }
+            } else if (seat.zone === 3 || seat.zone === 4) {
+                shift = KBR_6T_COLUMN_WIDTH;
+            }
+
+            return { ...seat, x: seat.x + shift };
+        });
+
+        ['A', 'B', 'C', 'D', 'E'].forEach(row => {
+            // X identifies the additional 6T column, avoiding any
+            // renumbering of the existing Zone 2 seats.
+            const id = `kbr-z2-${row}X`;
+            KBR_SEATS_6T.push({
+                manager: `Z2-${row}X`,
+                member: `${row}X`,
+                id,
+                zone: 2,
+                row,
+                number: 'X'
+            });
+            KBR_GEOMETRY_6T.push({
+                id,
+                zone: 2,
+                row,
+                number: 'X',
+                x: 918 + 3 * KBR_MIDDLE_SPACING,
+                y: KBR_ROW_Y[row],
+                angle: 0
+            });
+        });
+
+        const KBR_CONFIGURATIONS = {
+            'kevin-barry-5t': {
+                label: 'Kevin Barry 5T',
+                seats: KBR_SEATS,
+                geometry: KBR_GEOMETRY,
+                width: KBR_VIEWBOX_WIDTH
+            },
+            'kevin-barry-6t': {
+                label: 'Kevin Barry 6T',
+                seats: KBR_SEATS_6T,
+                geometry: KBR_GEOMETRY_6T,
+                width: KBR_VIEWBOX_WIDTH + KBR_6T_COLUMN_WIDTH
+            }
+        };
+
+        // The Studio: conductor at the top, two straight rectangular blocks.
+        // Chair size is exactly 50 x 55 (as in the National Concert Hall).
+        const STUDIO_SEAT_X_STEP = 53;
+        const STUDIO_SEAT_Y_STEP = 69;
+        const STUDIO_SEAT_WIDTH = 50;
+        const STUDIO_SEAT_HEIGHT = 55;
+        // Corridors are clear distances between the outer edges of chairs.
+        const STUDIO_OUTER_AISLE = 1.5 * STUDIO_SEAT_X_STEP;
+        const STUDIO_CENTRAL_AISLE = 2.5 * STUDIO_SEAT_X_STEP;
+        const STUDIO_FIRST_ROW_Y = 112;
+
+        function makeStudioConfiguration(label, rows, columns) {
+            const seats = [];
+            const geometry = [];
+            const blockWidth = STUDIO_SEAT_WIDTH +
+                (columns - 1) * STUDIO_SEAT_X_STEP;
+            const leftX = STUDIO_OUTER_AISLE;
+            const rightX = leftX + blockWidth + STUDIO_CENTRAL_AISLE;
+            const width = rightX + blockWidth + STUDIO_OUTER_AISLE;
+            const height = STUDIO_FIRST_ROW_Y +
+                (rows - 1) * STUDIO_SEAT_Y_STEP +
+                STUDIO_SEAT_HEIGHT + 38;
+
+            [1, 2].forEach(block => {
+                for (let row = 1; row <= rows; row++) {
+                    for (let column = 1; column <= columns; column++) {
+                        const id = `studio-b${block}-r${row}-s${column}`;
+                        seats.push({
+                            id,
+                            manager: `${block === 1 ? 'L' : 'R'}${row}-${column}`,
+                            member: `Row ${row}, Seat ${column}`,
+                            block,
+                            row,
+                            number: column
+                        });
+                        geometry.push({
+                            id,
+                            block,
+                            row,
+                            column,
+                            x: (block === 1 ? leftX : rightX) +
+                                (column - 1) * STUDIO_SEAT_X_STEP,
+                            y: STUDIO_FIRST_ROW_Y +
+                                (row - 1) * STUDIO_SEAT_Y_STEP
+                        });
+                    }
+                }
+            });
+
+            return { label, rows, columns, seats, geometry, width, height };
+        }
+
+        const STUDIO_CONFIGURATIONS = {
+            'studio-portrait': makeStudioConfiguration(
+                'The Studio (Portrait)', 15, 5
+            ),
+            'studio-landscape': makeStudioConfiguration(
+                'The Studio (Landscape)', 8, 10
+            )
+        };
+
+        function isStudioVenue(venue) {
+            return Boolean(STUDIO_CONFIGURATIONS[venue]);
+        }
+
+        function activeStudioConfiguration() {
+            return STUDIO_CONFIGURATIONS[el('performanceSpace').value] ||
+                STUDIO_CONFIGURATIONS['studio-portrait'];
+        }
+
+        function isKevinBarryVenue(venue) {
+            return Boolean(KBR_CONFIGURATIONS[venue]);
+        }
+
+        function activeKevinBarryConfiguration() {
+            return KBR_CONFIGURATIONS[el('performanceSpace').value] ||
+                KBR_CONFIGURATIONS['kevin-barry-5t'];
+        }
+
+        function isSeatInVenue(seatId, venue) {
+            if (isStudioVenue(venue)) {
+                return STUDIO_CONFIGURATIONS[venue].seats.some(
+                    seat => seat.id === seatId
+                );
+            }
+            if (isKevinBarryVenue(venue)) {
+                return KBR_CONFIGURATIONS[venue].seats.some(
+                    seat => seat.id === seatId
+                );
+            }
+            return venue === 'nch' && NCH_SEATS.some(
+                seat => seat.id === seatId
+            );
+        }
+
+        const NS = 'http://www.w3.org/2000/svg';
+
+        const SEAT_MAP = Object.fromEntries(
+            [
+                ...NCH_SEATS,
+                ...KBR_SEATS_6T,
+                ...STUDIO_CONFIGURATIONS['studio-portrait'].seats,
+                ...STUDIO_CONFIGURATIONS['studio-landscape'].seats
+            ].map(s => [s.id, s])
+        );
+
+        const BASE = {
+            red: '#fceff1',
+            blue: '#edf6fd',
+            orange: '#fff5e9',
+            green: '#eff9ec',
+            kbr: '#edf1f5',
+            studio: '#edf1f5'
+        };
+
+        const VOICES = ['S', 'A', 'T', 'B'];
+
+        const PALETTE = {
+            S: ['#f2288e', '#f76db5', '#fab2d6'],
+            A: ['#0aaf57', '#70d49c', '#b8ebcf'],
+            T: ['#2662e5', '#779cf2', '#b9cdf9'],
+            B: ['#d6ad32', '#dfc057', '#ecd58a']
+        };
+
+        // Timbre represented by a portion of the left semicircle.
+
+        const TIMBRE_ARC = {
+            light: 1 / 6,
+            medium: 1 / 3,
+            strong: 1 / 2
+        };
+
+        const BAR = {
+            small: 10,
+            average: 17,
+            tall: 25
+        };
+
+        const DIVS = { S: 2, A: 2, T: 2, B: 2 };
+
+        // Singer records are loaded from the selected Google Sheet project.
+        let singers = [];
+        let byNumber = {};
+
+        // Convert project worksheet records into singer objects.
+
+        function convertProjectSinger(row) {
+            const number = String(row.number).padStart(3, '0');
+            const name = String(row.name).trim();
+            const group = String(row.group).trim().toUpperCase();
+
+            return {
+                number,
+                name,
+                voice: group.charAt(0),
+                subdivision: Number(group.slice(1)) || 1,
+                height: String(row.height).toLowerCase(),
+                timbre: String(row.timbre).toLowerCase(),
+                participation: Number(row.participation),
+                memberId: row.memberId || null
+            };
+        }
+
+        // Retrieve live project data using an authenticated session.
+        async function fetchProjectSingers(project, sessionToken) {
+            const url = SEATING_WORKER_URL +
+                '/project?project=' + encodeURIComponent(project);
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + sessionToken
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(
+                    'Project data request failed: HTTP ' + response.status
+                );
+            }
+
+            const result = await response.json();
+
+            if (!result.success || !Array.isArray(result.singers)) {
+                throw new Error('Invalid project data received.');
+            }
+
+            // Update the read-only work label only for the currently selected project.
+            if (document.getElementById('projectSelect').value === project) {
+                const workName = String(result.workName ?? '').trim();
+                document.getElementById('projectWorkName').textContent =
+                    workName || 'Work name not entered';
+            }
+            return result.singers.map(convertProjectSinger);
+        }
+
+        // Separate working seating allocations for each venue.
+        const allocationsByProject = {
+            Project1: {},
+            Project2: {},
+            Project3: {}
+        };
+
+        function getProjectVenueAllocations(project, venue) {
+            if (!allocationsByProject[project][venue]) {
+                allocationsByProject[project][venue] = {};
+            }
+
+            return allocationsByProject[project][venue];
+        }
+
+        // The existing allocation functions use the active venue's record.
+
+        let allocations = getProjectVenueAllocations('Project1', 'nch');
+
+        let selected = null, history = [];
+
+        const activeGroups = new Set();
+        const el = id => document.getElementById(id);
+
+        function svg(tag, attrs = {}, text) {
+            const element = document.createElementNS(NS, tag);
+            Object.entries(attrs).forEach(([key, value]) => {
+                element.setAttribute(key, String(value));
+            });
+            if (text !== undefined) element.textContent = text;
+            return element;
+        }
+
+        function part(num) {
+            return Math.min(DIVS[num.voice], num.subdivision);
+        }
+
+        function shade(s) {
+            return PALETTE[s.voice][part(s) - 1];
+
+        }
+
+        function seatFill(s) {
+            const zone = s.id.split('-')[0];
+            return BASE[zone];
+        }
+
+        function seatContent(group, x, y, seat) {
+
+            let number = allocations[seat.id],
+                person = byNumber[number];
+
+            const rect = svg('rect', {
+                x,
+                y,
+                width: 50,
+                height: 55,
+                rx: 3,
+                fill: person ? shade(person) : seatFill(seat)
+            });
+            group.appendChild(rect);
+
+            if (person) {
+                // The timbre arc occupies part of the left semicircle.
+                // Light = one-third; medium = two-thirds; strong = all.
+
+                const circumference = 2 * Math.PI * 21;
+
+                const arc = svg('circle', {
+                    cx: x + 25,
+                    cy: y + 25,
+                    r: 21,
+                    fill: 'none',
+                    stroke: '#ffffff',
+                    'stroke-width': 4,
+                    'stroke-dasharray':
+                        `${circumference * TIMBRE_ARC[person.timbre]} ${circumference}`,
+                    transform: `rotate(90 ${x + 25} ${y + 25})`
+                });
+
+                group.appendChild(arc);
+                group.appendChild(svg('rect', {
+                    x: x + 38,
+                    y: y + 42 - BAR[person.height],
+                    width: 8,
+                    height: BAR[person.height],
+                    rx: 2,
+                    fill: '#ffffff',
+                    stroke: '#182a40',
+                    'stroke-width': 1
+                }));
+
+                // Yellow corner triangle for rehearsal-only singers.
+                if (person.participation === 1) {
+                    group.appendChild(svg('polygon', {
+                        points: `${x + 30},${y} ${x + 50},${y} ${x + 50},${y + 20}`,
+                        fill: '#ffff00',
+                        stroke: '#172238',
+                        'stroke-width': 1.5,
+                        'stroke-linejoin': 'round'
+                    }));
+                }
+
+                group.appendChild(svg('text', {
+                    x: x + 25,
+                    y: y + 24,
+                    'font-size': 13,
+                    'font-weight': 800,
+                    'text-anchor': 'middle',
+                    fill: '#172238'
+                },
+                    Number(number)));
+
+                group.appendChild(svg('text', {
+                    x: x + 25,
+                    y: y + 37,
+                    'font-size': 9,
+                    'font-weight': 700,
+                    'text-anchor': 'middle',
+                    fill: '#172238'
+                },
+                    person.voice + (DIVS[person.voice] > 1 ? part(person) : '')));
+            }
+
+            group.classList.toggle('selected', selected?.kind === 'seat' && selected.id === seat.id);
+
+            group.addEventListener('click', () => clickSeat(seat.id));
+
+            // Show singer information while the right mouse button is held down.
+            group.addEventListener('mousedown', event => {
+                if (event.button !== 2) return;
+
+                const choirNumber = allocations[seat.id];
+
+                if (choirNumber) {
+                    event.preventDefault();
+                    showSingerInfoBubble(choirNumber, group);
+                }
+            });
+
+            // Prevent Chrome's normal right-click menu on occupied seats.
+            group.addEventListener('contextmenu', event => {
+                if (allocations[seat.id]) {
+                    event.preventDefault();
+                }
+            });
+
+            // Hide the bubble when the right mouse button is released.
+            group.addEventListener('mouseup', event => {
+                if (event.button === 2) {
+                    hideSingerInfoBubble();
+                }
+            });
+
+            group.setAttribute('tabindex', '0');
+            group.setAttribute('role', 'button');
+            group.setAttribute('aria-label', `${seat.manager}, ${seat.id}, ${number ? 'singer ' + number : 'empty'}`);
+            group.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    clickSeat(seat.id);
+                }
+            });
+        }
+
+        function drawSeat(root, id, x, y, angle = 0) {
+            const seat = SEAT_MAP[id];
+            if (!seat) throw Error('Seat not found: ' + id);
+
+            const attrs = {
+                'class': 'seat',
+                'data-seat-id': id
+            };
+
+            if (angle) {
+                attrs.transform = `rotate(${angle} ${x + 25} ${y + 27.5})`;
+            }
+
+            const group = svg('g', attrs);
+
+            seatContent(group, x, y, seat);
+            root.appendChild(group);
+        }
+
+        function drawNchSide(zone) {
+            let root = el('nch' + zone.charAt(0).toUpperCase() + zone.slice(1) + 'Svg');
+            root.replaceChildren();
+            const paper = svg('svg', { viewBox: '0 0 608 290', 'aria-label': zone + ' seating area' });
+            root.appendChild(paper);
+            let counts = { F: 4, E: 11, D: 10, C: 9 };['F', 'E', 'D', 'C'].forEach((r, ri) => {
+                let n = counts[r];
+                for (let k = 1; k <= n; k++) {
+                    let col = zone === 'red' ? (r === 'F' ? 3.5 + k - 1 : 11 - n + k - 1) : (r === 'F' ? 3.5 + k - 1 : k - 1);
+                    drawSeat(paper, `${zone}-${r}${k}`, 10 + col * 53, 10 + ri * 69);
+                }
+            });
+        }
+
+        function drawNchCentre() {
+            let root = el('nchCentreSvg');
+            root.replaceChildren();
+            const paper = svg('svg', { viewBox: '0 0 916 380', 'aria-label': 'Blue and Orange central seating with organ console' });
+            root.appendChild(paper);
+            const blueX = 12, dividerX = 438, dividerW = 11, orangeX = 455, unit = 53, ys = { E: 15, D: 84, C: 153, B: 222, A: 291 };
+            paper.appendChild(svg('rect', { x: dividerX, y: 15, width: dividerW, height: 124, fill: '#e97be9' }));
+            paper.appendChild(svg('rect', {
+                x: blueX + 6 * unit + 8,
+                y: 153,
+                width: 4 * unit + dividerW - 12,
+                height: 25,
+                fill: '#e97be9'
+            }));
+            const orgX = blueX + 6 * unit + 8;
+            paper.appendChild(svg('rect', {
+                x: orgX,
+                y: 187,
+                width: 4 * unit + dividerW - 12,
+                height: 159,
+                fill: '#a6a6a6'
+            }));
+            paper.appendChild(svg('text', {
+                x: orgX + (4 * unit + dividerW - 12) / 2,
+                y: 259,
+                'text-anchor': 'middle',
+                'font-size': 23,
+                'font-weight': 700,
+                fill: '#29394c'
+            }, 'Organ'));
+            paper.appendChild(svg('text', {
+                x: orgX + (4 * unit + dividerW - 12) / 2,
+                y: 284,
+                'text-anchor': 'middle',
+                'font-size': 23,
+                'font-weight': 700,
+                fill: '#29394c'
+            }, 'Console'));
+            const counts = { E: 8, D: 8, C: 6, B: 6, A: 6 };['E', 'D', 'C', 'B', 'A'].forEach(r => {
+                for (let k = 1; k <= counts[r]; k++) {
+                    let cb = counts[r] === 8 ? 8 - k : 6 - k, co = counts[r] === 8 ? k - 1 : k + 1;
+                    drawSeat(paper, `blue-${r}${k}`, blueX + cb * unit, ys[r]); drawSeat(paper, `orange-${r}${k}`, orangeX + co * unit, ys[r]);
+                }
+            });
+        }
+
+        // Render the selected Kevin Barry configuration (5T or 6T).
+
+        function drawKbr() {
+            const config = activeKevinBarryConfiguration();
+            const root = el('kbrSvg');
+            root.replaceChildren();
+
+            const paper = svg('svg', {
+                viewBox: `0 0 ${config.width} ${KBR_VIEWBOX_HEIGHT}`,
+                'aria-label': config.label + ' seating plan'
+            });
+
+            root.appendChild(paper);
+
+            // Zone labels
+            [1, 2, 3, 4].forEach(zone => {
+                const zoneSeats = config.geometry.filter(
+                    item => SEAT_MAP[item.id].zone === zone
+                );
+
+                const minX = Math.min(...zoneSeats.map(item => item.x));
+                const maxX = Math.max(...zoneSeats.map(item => item.x)) + 50;
+                const centreX = (minX + maxX) / 2;
+
+                paper.appendChild(svg('text', {
+                    x: centreX,
+                    y: 20,
+                    'text-anchor': 'middle',
+                    'font-size': 16,
+                    'font-weight': 800,
+                    'letter-spacing': 1,
+                    fill: '#516176'
+                }, `KBR Zone ${zone}`));
+            });
+
+            config.geometry.forEach(seat => {
+                drawSeat(
+                    paper,
+                    seat.id,
+                    seat.x,
+                    seat.y,
+                    seat.angle || 0
+                );
+            });
+
+            // Conductor's podium, in front of the gap
+            // between Zones 2 and 3.
+
+            const podiumX = 1138 + (config.width - KBR_VIEWBOX_WIDTH) / 2;
+            const podiumY = 548;
+            const podiumWidth = 200;
+            const podiumHeight = 42;
+
+            paper.appendChild(svg('rect', {
+                x: podiumX,
+                y: podiumY,
+                width: podiumWidth,
+                height: podiumHeight,
+                rx: 8,
+                fill: '#f5e7cc',
+                stroke: '#97743d',
+                'stroke-width': 2
+            }));
+
+            paper.appendChild(svg('text', {
+                x: podiumX + podiumWidth / 2,
+                y: podiumY + 26,
+                'text-anchor': 'middle',
+                'font-size': 15,
+                'font-weight': 700,
+                fill: '#5d421e'
+            }, 'CONDUCTOR'));
+
+        }
+
+        // The Studio uses the application's normal, interactive seat renderer.
+        function drawStudio() {
+            const config = activeStudioConfiguration();
+            const root = el('studioSvg');
+            root.replaceChildren();
+
+            const paper = svg('svg', {
+                viewBox: `0 0 ${config.width} ${config.height}`,
+                'aria-label': config.label + ' seating plan'
+            });
+            root.appendChild(paper);
+
+            // Keep the conductor centred above the central corridor.
+            const podiumX = config.width / 2 - 100;
+            paper.appendChild(svg('rect', {
+                x: podiumX, y: 16, width: 200, height: 42,
+                rx: 8, fill: '#f5e7cc', stroke: '#97743d',
+                'stroke-width': 2
+            }));
+            paper.appendChild(svg('text', {
+                x: config.width / 2, y: 42,
+                'text-anchor': 'middle', 'font-size': 15,
+                'font-weight': 700, fill: '#5d421e'
+            }, 'CONDUCTOR'));
+
+            [1, 2].forEach(block => {
+                const blockSeats = config.geometry.filter(s => s.block === block);
+                const minX = Math.min(...blockSeats.map(s => s.x));
+                const maxX = Math.max(...blockSeats.map(s => s.x)) +
+                    STUDIO_SEAT_WIDTH;
+                paper.appendChild(svg('text', {
+                    x: (minX + maxX) / 2,
+                    y: 89,
+                    'text-anchor': 'middle',
+                    'font-size': 15, 'font-weight': 800,
+                    'letter-spacing': 1, fill: '#516176'
+                }, block === 1 ? 'LEFT BLOCK' : 'RIGHT BLOCK'));
+            });
+
+            config.geometry.forEach(seat => {
+                drawSeat(paper, seat.id, seat.x, seat.y);
+            });
+        }
+
+        function render() {
+            const venue = el('performanceSpace').value;
+
+            if (isKevinBarryVenue(venue)) {
+                drawKbr();
+            } else if (isStudioVenue(venue)) {
+                drawStudio();
+            } else {
+                drawNchSide('red');
+                drawNchCentre();
+                drawNchSide('green');
+            }
+
+            renderTokens();
+            const occupied = Object.keys(allocations).length;
+            el('assignedCount').textContent = occupied;
+            const capacity = isKevinBarryVenue(venue)
+                ? activeKevinBarryConfiguration().seats.length
+                : isStudioVenue(venue)
+                    ? activeStudioConfiguration().seats.length
+                    : NCH_SEATS.length;
+
+            el('vacantCount').textContent = capacity - occupied;
+            el('pendingCount').textContent = singers.length - occupied;
+            el('undoBtn').disabled = !history.length;
+            el('unseatBtn').disabled = !selected || (selected.kind === 'seat' && !allocations[selected.id]);
+        }
+
+        function coin(s) {
+            const e = document.createElement('span');
+            e.className = 'coin';
+            e.style.setProperty('--tone', shade(s));
+
+            e.innerHTML =
+                `<small>${s.voice}${DIVS[s.voice] > 1 ? part(s) : ''}</small>` +
+                `<strong>${Number(s.number)}</strong>`;
+
+            // White timbre arc on the left-hand side of the token.
+
+            const arcSvg = document.createElementNS(NS, 'svg');
+
+            arcSvg.setAttribute('viewBox', '0 0 58 58');
+            arcSvg.setAttribute('class', 'coin-timbre-arc');
+
+            const circumference = 2 * Math.PI * 21;
+
+            const arc = svg('circle', {
+                cx: 29,
+                cy: 29,
+                r: 21,
+                fill: 'none',
+                stroke: '#ffffff',
+                'stroke-width': 4,
+                'stroke-dasharray':
+                    `${circumference * TIMBRE_ARC[s.timbre]} ${circumference}`,
+                transform: 'rotate(90 29 29)'
+            });
+
+            arcSvg.appendChild(arc);
+            e.appendChild(arcSvg);
+
+            let bar = document.createElement('i');
+            bar.className = 'heightbar';
+            bar.style.setProperty('--bar', BAR[s.height] + 'px');
+            e.appendChild(bar);
+
+            // White corner triangle for rehearsal-only singers.
+            if (s.participation === 1) {
+                const triangle = document.createElement('span');
+
+                triangle.style.position = 'absolute';
+                triangle.style.top = '0';
+                triangle.style.right = '0';
+                triangle.style.width = '0';
+                triangle.style.height = '0';
+                triangle.style.borderTop = '28px solid #ffff00';
+                triangle.style.borderLeft = '28px solid transparent';
+                triangle.style.filter = 'drop-shadow(-1px 1px 0 #172238)';
+                triangle.style.pointerEvents = 'none';
+
+                e.appendChild(triangle);
+            }
+
+            return e;
+        }
+
+        function renderTokens() {
+            const q = el('search').value.trim(), box = el('tokens');
+            box.replaceChildren();
+            singers.filter(s => !Object.values(allocations).includes(s.number) && !activeGroups.has(
+                s.voice + (DIVS[s.voice] > 1 ? part(s) : '')
+            ) &&
+                s.number.includes(q)).forEach(s => {
+                    let b = document.createElement('button');
+                    b.className = 'token' + (selected?.kind === 'singer' && selected.id === s.number ? ' selected' : '');
+                    b.appendChild(coin(s));
+
+                    b.onclick = () => {
+                        selected = { kind: 'singer', id: s.number };
+                        message('Selected singer ' + s.number + '. Click an empty or occupied seat.');
+                        render();
+                    };
+
+                    // Show singer information while the right mouse button is held down.
+                    b.addEventListener('mousedown', event => {
+                        if (event.button !== 2) return;
+
+                        event.preventDefault();
+                        showSingerInfoBubble(s.number, b);
+                    });
+
+                    b.addEventListener('contextmenu', event => {
+                        event.preventDefault();
+                    });
+
+                    b.addEventListener('mouseup', event => {
+                        if (event.button === 2) {
+                            hideSingerInfoBubble();
+                        }
+                    });
+
+                    box.appendChild(b);
+                });
+
+            if (!box.children.length) {
+                const p = document.createElement('div'); p.className = 'empty';
+                p.textContent = 'No unallocated singers match.'; box.appendChild(p);
+            }
+        }
+
+        function message(s) {
+            el('status').textContent = s;
+        }
+
+        // Display a temporary information bubble beside a singer token.
+        function showSingerInfoBubble(choirNumber, tokenElement) {
+            const singer = byNumber[String(choirNumber)];
+            if (!singer) return;
+
+            const assignedSeatId = Object.keys(allocations).find(
+                seatId => allocations[seatId] === singer.number
+            );
+
+            let seatDescription = 'Not allocated';
+
+            if (assignedSeatId) {
+                const seat = SEAT_MAP[assignedSeatId];
+                const venue = el('performanceSpace').value;
+
+                if (isKevinBarryVenue(venue)) {
+                    seatDescription =
+                        `${seat.member} (KBR Zone ${seat.zone})`;
+                } else if (isStudioVenue(venue)) {
+                    seatDescription = `${seat.member} (${seat.block === 1 ? 'Left Block' : 'Right Block'})`;
+                } else {
+                    seatDescription = `${seat.member} (${assignedSeatId})`;
+                }
+            }
+
+            function hideSingerInfoBubble() {
+                el('singerInfoBubble').hidden = true;
+            }
+
+            // Hide the bubble even if the mouse is released outside the token.
+            document.addEventListener('mouseup', event => {
+                if (event.button === 2) {
+                    hideSingerInfoBubble();
+                }
+            });
+
+            window.addEventListener('blur', hideSingerInfoBubble);
+
+            const bubble = el('singerInfoBubble');
+            const content = el('singerInfoBubbleContent');
+
+            content.replaceChildren();
+
+            const nameLine = document.createElement('div');
+            const seatLine = document.createElement('div');
+
+            const nameLabel = document.createElement('strong');
+            nameLabel.textContent = 'Name: ';
+            nameLine.append(nameLabel, singer.name || 'Not yet recorded');
+
+            const seatLabel = document.createElement('strong');
+            seatLabel.textContent = 'Seat: ';
+            seatLine.append(seatLabel, seatDescription);
+
+            content.append(nameLine, seatLine);
+
+            // Measure the bubble before deciding where to place it.
+            bubble.style.visibility = 'hidden';
+            bubble.hidden = false;
+
+            const tokenRect = tokenElement.getBoundingClientRect();
+            const bubbleRect = bubble.getBoundingClientRect();
+            const gap = 12;
+            const margin = 8;
+
+            // Prefer the right, but move to the left if necessary.
+            let left = tokenRect.right + gap;
+
+            if (left + bubbleRect.width > window.innerWidth - margin) {
+                left = tokenRect.left - bubbleRect.width - gap;
+            }
+
+            // Keep the bubble inside the visible window.
+            left = Math.max(margin, Math.min(
+                left,
+                window.innerWidth - bubbleRect.width - margin
+            ));
+
+            let top = tokenRect.top;
+
+            if (top + bubbleRect.height > window.innerHeight - margin) {
+                top = tokenRect.bottom - bubbleRect.height;
+            }
+
+            top = Math.max(margin, Math.min(
+                top,
+                window.innerHeight - bubbleRect.height - margin
+            ));
+
+            bubble.style.left = `${left}px`;
+            bubble.style.top = `${top}px`;
+            bubble.style.visibility = 'visible';
+        }
+
+        function clickSeat(id) {
+            if (!selected) {
+                if (allocations[id]) {
+                    selected = { kind: 'seat', id };
+                    message(
+                        'Selected ' + SEAT_MAP[id].manager +
+                        ' (singer ' + allocations[id] +
+                        '). Click destination seat to move or swap.'
+                    );
+                } else {
+                    message(
+                        SEAT_MAP[id].manager +
+                        ' is vacant. Choose a singer first.'
+                    );
+                }
+                render();
+                return;
+            }
+            if (selected.kind === 'seat' && selected.id === id) {
+                selected = null;
+                message('Selection cleared.');
+                render();
+                return;
+            }
+            const number = selected.kind === 'singer'
+                ? selected.id
+                : allocations[selected.id];
+
+            if (!number) {
+                selected = null;
+                render();
+                return;
+            }
+            const source = selected.kind === 'seat' ? selected.id : null;
+            const other = allocations[id];
+
+            snapshot();
+            if (source) delete allocations[source];
+            allocations[id] = number;
+            if (other && source) allocations[source] = other;
+
+            selected = null;
+            message(other
+                ? (source
+                    ? 'Singers swapped.'
+                    : 'Seat reassigned; previous occupant returned to unallocated pool.')
+                : 'Singer ' + number + ' allocated to ' + SEAT_MAP[id].manager + '.'
+            );
+            render();
+        }
+
+        function snapshot() {
+            history.push({ ...allocations });
+            if (history.length > 100) history.shift();
+        }
+
+        function divisionsUI() {
+            const holder = el('divisionControls');
+            holder.replaceChildren();
+            VOICES.forEach(v => {
+                let l = document.createElement('label');
+                l.textContent = ({ S: 'Soprano', A: 'Alto', T: 'Tenor', B: 'Bass' })[v];
+                const sel = document.createElement('select');[1, 2, 3].forEach(i => sel.add(new Option(i + ' group' + (i > 1 ? 's' : ''), i)));
+                sel.value = DIVS[v];
+                sel.onchange = () => {
+                    DIVS[v] = Number(sel.value); singers.filter(s => s.voice === v).forEach((s, i) => s.subdivision = i % DIVS[v] + 1);
+                    activeGroups.clear();
+                    filtersUI();
+                    render();
+                }; l.appendChild(sel); holder.appendChild(l);
+            });
+        }
+
+        function filterButton(holder, label, on, action) {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.textContent = label;
+            b.className = on ? 'active' : '';
+            b.setAttribute('aria-pressed', String(on));
+            b.onclick = action;
+            holder.appendChild(b);
+        }
+
+        function filtersUI() {
+            const holder = el('voiceFilters');
+            holder.replaceChildren();
+
+            VOICES.forEach(v => {
+
+                const count = DIVS[v];
+
+                for (let i = 1; i <= count; i++) {
+
+                    const key = count === 1 ? v : v + i;
+
+                    const isActive = !activeGroups.has(key);
+
+                    filterButton(
+                        holder,
+                        key,
+                        isActive,
+                        () => {
+                            if (activeGroups.has(key)) {
+                                activeGroups.delete(key);
+                            } else {
+                                activeGroups.add(key);
+                            }
+
+                            filtersUI();
+                            renderTokens();
+                        }
+                    );
+                }
+            });
+        }
+
+        // Seating plan magnification
+
+        let zoom = 1;
+
+        function applyZoom() {
+
+            const layout = el('layout');
+
+            // Keep row alignment correct at every magnification.
+
+            layout.style.setProperty('--seating-zoom', zoom);
+
+            // Change the width of each SVG section.
+            // All sections use the same magnification factor.
+
+            layout.querySelectorAll('.section.side').forEach(section => {
+                section.style.flex = `0 0 ${608 * zoom}px`;
+            });
+
+            layout.querySelectorAll('.section.centre').forEach(section => {
+                section.style.flex = `0 0 ${916 * zoom}px`;
+            });
+
+            // Apply the same magnification to the Kevin Barry Room.
+
+            const kbrSection = el('kbrSection');
+
+            kbrSection.style.width = `${activeKevinBarryConfiguration().width * zoom}px`;
+            kbrSection.style.flex = `0 0 ${activeKevinBarryConfiguration().width * zoom}px`;
+
+            const studioConfig = activeStudioConfiguration();
+            const studioSection = el('studioSection');
+            studioSection.style.width = `${studioConfig.width * zoom}px`;
+            studioSection.style.flex = `0 0 ${studioConfig.width * zoom}px`;
+
+            el('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+        }
+
+        // Zoom in
+
+        el('zoomInBtn').addEventListener('click', () => {
+            zoom = Math.min(2, zoom + 0.25);
+            applyZoom();
+        });
+
+        // Zoom out
+
+        el('zoomOutBtn').addEventListener('click', () => {
+            zoom = Math.max(0.5, zoom - 0.25);
+            applyZoom();
+        });
+
+        // Restore normal magnification
+
+        el('zoomResetBtn').addEventListener('click', () => {
+            zoom = 1;
+            applyZoom();
+        });
+
+        function applyLayout() {
+            const layout = el('layout');
+            layout.className = 'layout nch-layout landscape';
+            layout.replaceChildren(
+                el('nchRedSection'),
+                el('nchCentreSection'),
+                el('nchGreenSection')
+            );
+        }
+
+        // Switch between rehearsal/performance spaces.
+
+        function changePerformanceSpace() {
+            // Each venue opens with the optional partial-print controls collapsed.
+            el('partialPrintControls').hidden = true;
+            el('partialPrintToggle').setAttribute('aria-expanded', 'false');
+
+            const venue = el('performanceSpace').value;
+            const showKbr = isKevinBarryVenue(venue);
+            const showStudio = isStudioVenue(venue);
+
+            el('nchPrintButtons').hidden = showKbr || showStudio;
+            el('kbrPrintButtons').hidden = !showKbr;
+            el('studioPrintButtons').hidden = !showStudio;
+            el('nchPartialPrintButtons').hidden = showKbr || showStudio;
+            el('kbrPartialPrintButtons').hidden = !showKbr;
+            el('studioPartialPrintButtons').hidden = !showStudio;
+
+            const project = el('projectSelect').value;
+            allocations = getProjectVenueAllocations(project, venue);
+            selected = null;
+            history = [];
+
+            el('layout').hidden = showKbr || showStudio;
+            el('kbrLayout').hidden = !showKbr;
+            el('studioLayout').hidden = !showStudio;
+
+            if (showKbr) {
+                el('kbrSection').firstElementChild.textContent =
+                    activeKevinBarryConfiguration().label.toUpperCase();
+                const config = activeKevinBarryConfiguration();
+                message(config.label + ': ' + config.seats.length + ' seats.');
+            } else if (showStudio) {
+                const config = activeStudioConfiguration();
+                el('studioHeading').textContent = config.label.toUpperCase();
+                message(config.label + ': ' + config.seats.length + ' seats.');
+            } else {
+                message('National Concert Hall seating plan selected.');
+            }
+
+            applyZoom();
+            render();
+        }
+
+        async function changeProject() {
+            const project = el('projectSelect').value;
+            const venue = el('performanceSpace').value;
+            el('projectWorkName').textContent = 'Loading work name…';
+
+            try {
+                message('Loading live singer data for ' + project + '...');
+
+                const liveSingers = await fetchProjectSingers(
+                    project,
+                    seatingSessionToken || ''
+                );
+
+                const duplicates = findDuplicateChoirNumbers(liveSingers);
+
+                const eligibleSingers = liveSingers.filter(
+                    singer => singer.participation === 1 ||
+                        singer.participation === 2
+                );
+
+                const missingIds = eligibleSingers.filter(
+                    singer => !singer.memberId
+                );
+
+                console.log('Project:', project);
+                console.log('Singers retrieved:', liveSingers.length);
+                console.log('Eligible singers:', eligibleSingers.length);
+                console.log('Duplicate choir numbers:', duplicates);
+                console.log('Eligible singers missing permanent IDs:', missingIds.length);
+
+                if (duplicates.length) {
+                    throw new Error('Duplicate choir numbers found.');
+                }
+
+                liveProjectSingers = liveSingers;
+                participatingProjectSingers = eligibleSingers;
+
+                allocations = getProjectVenueAllocations(project, venue);
+
+                selected = null;
+                history = [];
+
+                applyLiveProjectSingers(eligibleSingers);
+
+                console.log('Live project loaded:', {
+                    project,
+                    total: liveSingers.length,
+                    eligible: eligibleSingers.length,
+                    rehearsalOnly: liveSingers.filter(
+                        s => s.participation === 1
+                    ).length
+                });
+
+                message(
+                    project + ' loaded: ' +
+                    eligibleSingers.length + ' singers eligible for seating.'
+                );
+
+            } catch (error) {
+                console.error('Project switching failed:', error);
+                message('Unable to load ' + project + ': ' + error.message);
+            }
+        }
+
+        el('projectSelect').addEventListener(
+            'change',
+            changeProject
+        );
+
+        el('performanceSpace').addEventListener(
+            'change',
+            changePerformanceSpace
+        );
+
+        el('search').addEventListener('input', renderTokens);
+
+        el('undoBtn').onclick = () => {
+            if (!history.length) return;
+
+            const previous = history.pop();
+            Object.keys(allocations).forEach(key => delete allocations[key]);
+            Object.assign(allocations, previous);
+            selected = null;
+            message('Last move undone.');
+            render();
+        };
+
+        el('unseatBtn').onclick = () => {
+            if (selected?.kind !== 'seat' || !allocations[selected.id]) return;
+
+            snapshot();
+            delete allocations[selected.id];
+            selected = null;
+            message('Singer returned to unallocated pool.');
+            render();
+        };
+
+        // Temporary development access for permanent seating storage.
+        // The access token is never embedded in the HTML or localStorage.
+        let seatingStorageToken = '';
+
+        function getSeatingStorageToken() {
+            if (seatingStorageToken) return seatingStorageToken;
+
+            const entered = prompt(
+                'Enter the Seating Manager development access token:'
+            );
+
+            if (!entered || !entered.trim()) {
+                throw new Error('Access token not entered.');
+            }
+
+            seatingStorageToken = entered.trim();
+            return seatingStorageToken;
+        }
+
+        // Convert the active seating plan from choir numbers
+        // to permanent member IDs for Cloudflare storage.
+        function buildPermanentAllocationPlan() {
+            const plan = {};
+
+            for (const [seatId, choirNumber] of Object.entries(allocations)) {
+                const singer = byNumber[choirNumber];
+
+                if (!isSeatInVenue(
+                    seatId, el('performanceSpace').value
+                ) || !singer || !singer.memberId) {
+                    throw new Error(
+                        'Cannot save: invalid assignment at ' + seatId
+                    );
+                }
+
+                plan[seatId] = String(singer.memberId);
+            }
+
+            return plan;
+        }
+
+        // Convert saved permanent IDs back into choir numbers.
+        function convertSavedAllocationPlan(savedPlan, venue) {
+            const numberById = new Map(
+                singers.map(singer => [
+                    String(singer.memberId),
+                    singer.number
+                ])
+            );
+
+            const restored = {};
+            const used = new Set();
+
+            for (const [seatId, memberId] of Object.entries(savedPlan)) {
+                const number = numberById.get(String(memberId));
+
+                const correctVenue = isSeatInVenue(seatId, venue);
+
+                if (!correctVenue ||
+                    !number ||
+                    used.has(number)) {
+                    throw new Error(
+                        'Saved allocation requires attention at ' + seatId
+                    );
+                }
+
+                restored[seatId] = number;
+                used.add(number);
+            }
+
+            return restored;
+        }
+
+        // Save the current project and venue.
+        el('saveBtn').onclick = async () => {
+            const button = el('saveBtn');
+            if (button.disabled) return;
+
+            const project = el('projectSelect').value;
+            const venue = el('performanceSpace').value;
+
+            try {
+                const plan = buildPermanentAllocationPlan();
+                const token = getSeatingStorageToken();
+
+                button.disabled = true;
+                message('Saving seating plan to Cloudflare...');
+
+                const response = await fetch(
+                    SEATING_WORKER_URL + '/allocations',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
+                        body: JSON.stringify({
+                            project,
+                            venue,
+                            allocations: plan
+                        })
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    if (response.status === 401) seatingStorageToken = '';
+                    throw new Error(
+                        result.error || 'Cloudflare save failed.'
+                    );
+                }
+
+                message(
+                    project + ' seating plan saved successfully (' +
+                    result.assignments + ' singers).'
+                );
+
+            } catch (error) {
+                console.error('Seating save failed:', error);
+                message('Save unsuccessful: ' + error.message);
+            } finally {
+                button.disabled = false;
+            }
+        };
+
+        // Load the most recently saved plan.
+        el('loadBtn').onclick = async () => {
+            const button = el('loadBtn');
+            if (button.disabled) return;
+
+            const project = el('projectSelect').value;
+            const venue = el('performanceSpace').value;
+
+            try {
+                const token = getSeatingStorageToken();
+
+                button.disabled = true;
+                message('Retrieving seating plan from Cloudflare...');
+
+                const requestUrl =
+                    SEATING_WORKER_URL +
+                    '/allocations?project=' + encodeURIComponent(project) +
+                    '&venue=' + encodeURIComponent(venue);
+
+                const response = await fetch(requestUrl, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    if (response.status === 401) seatingStorageToken = '';
+                    throw new Error(
+                        result.error || 'Cloudflare retrieval failed.'
+                    );
+                }
+
+                if (!result.hasSavedPlan) {
+                    message('No saved seating plan for ' +
+                        project + ' at this venue.');
+                    return;
+                }
+
+                // Validate the complete plan before changing any seats.
+                const restored = convertSavedAllocationPlan(
+                    result.currentPlan,
+                    venue
+                );
+
+                // Do not overwrite changes made after the request began.
+                if (el('projectSelect').value !== project ||
+                    el('performanceSpace').value !== venue) {
+                    throw new Error(
+                        'Project or venue changed during retrieval.'
+                    );
+                }
+
+                const confirmed = confirm(
+                    'Load the last saved plan for ' + project +
+                    '?\n\nThis will replace the current unsaved ' +
+                    'seat arrangements for this project and venue.'
+                );
+
+                if (!confirmed) {
+                    message('Loading cancelled.');
+                    return;
+                }
+
+                Object.keys(allocations).forEach(
+                    seatId => delete allocations[seatId]
+                );
+
+                Object.assign(allocations, restored);
+
+                selected = null;
+                history = [];
+
+                render();
+
+                message(
+                    project + ' seating plan restored (' +
+                    Object.keys(restored).length + ' singers).'
+                );
+
+            } catch (error) {
+                console.error('Seating load failed:', error);
+                message('Load unsuccessful: ' + error.message);
+            } finally {
+                button.disabled = false;
+            }
+        };
+
+        // Restore the immediately preceding saved seating plan.
+        el('restorePreviousBtn').onclick = async () => {
+            const button = el('restorePreviousBtn');
+            if (button.disabled) return;
+
+            const project = el('projectSelect').value;
+            const venue = el('performanceSpace').value;
+
+            try {
+                const token = getSeatingStorageToken();
+                button.disabled = true;
+
+                const url =
+                    SEATING_WORKER_URL +
+                    '/allocations?project=' +
+                    encodeURIComponent(project) +
+                    '&venue=' +
+                    encodeURIComponent(venue);
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+
+                const saved = await response.json();
+
+                if (!response.ok || !saved.success) {
+                    if (response.status === 401) seatingStorageToken = '';
+                    throw new Error(
+                        saved.error || 'Unable to inspect saved versions.'
+                    );
+                }
+
+                if (!saved.previousPlan) {
+                    message('No previous saved version exists for this project and venue.');
+                    return;
+                }
+
+                // Check that the previous plan can be displayed
+                // before changing anything in the database.
+                const restored = convertSavedAllocationPlan(
+                    saved.previousPlan,
+                    venue
+                );
+
+                if (el('projectSelect').value !== project ||
+                    el('performanceSpace').value !== venue) {
+                    throw new Error('Project or venue changed.');
+                }
+
+                const confirmed = confirm(
+                    'Restore the previous saved version of ' + project +
+                    '?\n\nAny unsaved seat changes will be discarded.' +
+                    '\n\nThe current saved version will be retained ' +
+                    'as the previous version, so you can reverse this.'
+                );
+
+                if (!confirmed) {
+                    message('Restoration cancelled.');
+                    return;
+                }
+
+                const restoreResponse = await fetch(
+                    SEATING_WORKER_URL + '/allocations/restore',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
+                        body: JSON.stringify({
+                            project,
+                            venue,
+                            expectedCurrentSavedAt: saved.currentSavedAt,
+                            expectedPreviousSavedAt: saved.previousSavedAt
+                        })
+                    }
+                );
+
+                const result = await restoreResponse.json();
+
+                if (!restoreResponse.ok || !result.success) {
+                    if (restoreResponse.status === 401) {
+                        seatingStorageToken = '';
+                    }
+                    throw new Error(
+                        result.error || 'Restoration failed.'
+                    );
+                }
+
+                // The database swap has succeeded.
+                // Update the visible seating plan if still selected.
+                if (el('projectSelect').value !== project ||
+                    el('performanceSpace').value !== venue) {
+                    message(
+                        'Saved versions swapped for ' + project +
+                        '. Reload that project to display the restored plan.'
+                    );
+                    return;
+                }
+
+                Object.keys(allocations).forEach(
+                    seatId => delete allocations[seatId]
+                );
+
+                Object.assign(allocations, restored);
+                selected = null;
+                history = [];
+                render();
+
+                message(
+                    'Previous version restored successfully (' +
+                    Object.keys(restored).length + ' singers).'
+                );
+
+            } catch (error) {
+                console.error('Previous version restoration failed:', error);
+                message('Restoration unsuccessful: ' + error.message);
+            } finally {
+                button.disabled = false;
+            }
+        };
+
+        // Enable initials only when the timbre and height
+        // indicators are omitted.
+        el('omitPrintIndicators').addEventListener('change', () => {
+            const enabled = el('omitPrintIndicators').checked;
+            const initialsBox = el('printSingerInitials');
+
+            initialsBox.disabled = !enabled;
+
+            if (!enabled) {
+                initialsBox.checked = false;
+            }
+
+            el('printInitialsLabel').style.opacity =
+                enabled ? '1' : '0.5';
+        });
+
+        // Generate initials, preserving Irish surname prefixes.
+        function singerPrintInitials(name) {
+            const parts = String(name || '').trim().split(/\s+/);
+            if (parts.length < 2) return '';
+
+            const first = parts[0].charAt(0).toUpperCase();
+            const surname = parts[parts.length - 1];
+
+            const oMatch = surname.match(/^O['’](.+)/i);
+            if (oMatch) {
+                return first + "O'" +
+                    oMatch[1].charAt(0).toUpperCase();
+            }
+
+            const macMatch = surname.match(/^Mac(.+)/i);
+            if (macMatch) {
+                return first + 'Mac' +
+                    macMatch[1].charAt(0).toUpperCase();
+            }
+
+            const mcMatch = surname.match(/^Mc(.+)/i);
+            if (mcMatch) {
+                return first + 'Mc' +
+                    mcMatch[1].charAt(0).toUpperCase();
+            }
+
+            return first + surname.charAt(0).toUpperCase();
+        }
+
+        // Apply print-only changes to a cloned seating diagram.
+        // The on-screen diagram is never modified.
+        function preparePrintableSeatingSvg(printableSvg) {
+            const monochrome = el('monoPrintMode').checked;
+            const omitIndicators = el('omitPrintIndicators').checked;
+            const showInitials =
+                omitIndicators && el('printSingerInitials').checked;
+
+            printableSvg.querySelectorAll('.seat').forEach(seatGroup => {
+                const seatId = seatGroup.getAttribute('data-seat-id');
+                const singer = byNumber[allocations[seatId]];
+
+                const seatBackground =
+                    seatGroup.querySelector('rect');
+
+                if (monochrome && seatBackground) {
+                    seatBackground.setAttribute(
+                        'fill',
+                        singer ? '#ffffff' : '#eeeeee'
+                    );
+                    seatBackground.setAttribute(
+                        'stroke', '#777777'
+                    );
+                }
+
+                if (!singer) return;
+
+                const timbreArc = seatGroup.querySelector('circle');
+                const heightBar =
+                    seatGroup.querySelector('rect:nth-of-type(2)');
+
+                if (omitIndicators) {
+                    if (timbreArc) timbreArc.remove();
+                    if (heightBar) heightBar.remove();
+                } else if (monochrome) {
+                    if (timbreArc) {
+                        timbreArc.setAttribute(
+                            'stroke', '#000000'
+                        );
+                    }
+                    if (heightBar) {
+                        heightBar.setAttribute('fill', '#000000');
+                        heightBar.setAttribute('stroke', '#000000');
+                    }
+                }
+
+                if (monochrome) {
+                    seatGroup.querySelectorAll('text').forEach(text => {
+                        text.setAttribute('fill', '#000000');
+                    });
+
+                    // Rehearsal-only triangle: grey instead of yellow.
+                    seatGroup.querySelectorAll('polygon').forEach(triangle => {
+                        triangle.setAttribute('fill', '#888888');
+                        triangle.setAttribute('stroke', '#000000');
+                    });
+                }
+
+                if (showInitials) {
+                    const initials =
+                        singerPrintInitials(singer.name);
+
+                    if (!initials || !seatBackground) return;
+
+                    const x =
+                        Number(seatBackground.getAttribute('x')) + 25;
+                    const y =
+                        Number(seatBackground.getAttribute('y')) + 49;
+
+                    const initialsText =
+                        document.createElementNS(NS, 'text');
+
+                    initialsText.setAttribute('x', x);
+                    initialsText.setAttribute('y', y);
+                    initialsText.setAttribute(
+                        'font-size',
+                        initials.length > 3 ? '7.5' : '9'
+                    );
+                    initialsText.setAttribute('font-weight', '700');
+                    initialsText.setAttribute(
+                        'text-anchor', 'middle'
+                    );
+                    initialsText.setAttribute(
+                        'fill',
+                        monochrome ? '#000000' : '#172238'
+                    );
+
+                    initialsText.textContent = initials;
+                    seatGroup.appendChild(initialsText);
+                }
+            });
+        }
+
+        function partialPrintPaper() {
+            return document.querySelector(
+                'input[name="partialPrintPaper"]:checked'
+            ).value;
+        }
+
+        function partialPrintOptions(orientation = 'landscape') {
+            const size = partialPrintPaper();
+            return {
+                paper: `${size} ${orientation}`,
+                margin: size === 'A3' ? '9mm' : '10mm',
+                headingSize: size === 'A3' ? '18pt' : '16pt',
+                headingGap: '6mm',
+                maxSvgHeight: size === 'A3' ?
+                    (orientation === 'portrait' ? '365mm' : '246mm') :
+                    (orientation === 'portrait' ? '260mm' : '165mm')
+            };
+        }
+
+        function fullRoomA3Options(orientation = 'landscape', lowerDiagram = false) {
+            return {
+                paper: `A3 ${orientation}`,
+                margin: '5mm',
+                headingSize: '16pt',
+                headingGap: lowerDiagram ? '27mm' : '13mm',
+                maxSvgHeight: orientation === 'portrait' ? '362mm' : '245mm'
+            };
+        }
+
+        // Full Kevin Barry room: reuse the screen's exact geometry.
+        // Crop only unused SVG margins to gain print size, never alter seats.
+        function printKbrFullA3() {
+            const config = activeKevinBarryConfiguration();
+            const originalSvg = el('kbrSvg').querySelector('svg');
+            if (!originalSvg) {
+                message('Kevin Barry seating diagram is not available.');
+                return;
+            }
+
+            const printableSvg = originalSvg.cloneNode(true);
+            printableSvg.setAttribute('viewBox',
+                `65 0 ${config.width - 130} ${KBR_VIEWBOX_HEIGHT}`);
+            printableSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+            printSeatingDocument(printableSvg,
+                config.label + ' — Full Room', fullRoomA3Options('landscape', true));
+        }
+
+        // Print one Kevin Barry zone using the *existing* on-screen SVG.
+        // We clone its actual seat groups (including their rotations).
+        // No seat positions, angles, or spacing are recalculated.
+        function printKbrZone(zone) {
+            const config = activeKevinBarryConfiguration();
+            const originalSvg = el('kbrSvg').querySelector('svg');
+            if (!originalSvg) {
+                message('Kevin Barry seating diagram is not available.');
+                return;
+            }
+
+            const geometry = config.geometry.filter(seat => seat.zone === zone);
+            if (!geometry.length) return;
+
+            // Bounding box of all four corners of every rotated chair.
+            // This prevents the curved ends from being clipped on paper.
+            const bounds = {
+                minX: Infinity, maxX: -Infinity,
+                minY: Infinity, maxY: -Infinity
+            };
+            for (const seat of geometry) {
+                const x = seat.x, y = seat.y;
+                const radians = (seat.angle || 0) * Math.PI / 180;
+                const c = Math.cos(radians), sn = Math.sin(radians);
+                const cx = x + 25, cy = y + 27.5;
+                for (const [dx, dy] of [[-25, -27.5], [25, -27.5],
+                [25, 27.5], [-25, 27.5]]) {
+                    const px = cx + dx * c - dy * sn;
+                    const py = cy + dx * sn + dy * c;
+                    bounds.minX = Math.min(bounds.minX, px);
+                    bounds.maxX = Math.max(bounds.maxX, px);
+                    bounds.minY = Math.min(bounds.minY, py);
+                    bounds.maxY = Math.max(bounds.maxY, py);
+                }
+            }
+
+            const printableSvg = document.createElementNS(NS, 'svg');
+            const margin = 25;
+            printableSvg.setAttribute('viewBox', [
+                bounds.minX - margin,
+                bounds.minY - margin,
+                bounds.maxX - bounds.minX + 2 * margin,
+                bounds.maxY - bounds.minY + 2 * margin
+            ].join(' '));
+            printableSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+            const permittedSeatIds = new Set(geometry.map(seat => seat.id));
+            originalSvg.querySelectorAll('.seat[data-seat-id]').forEach(group => {
+                if (permittedSeatIds.has(group.getAttribute('data-seat-id'))) {
+                    printableSvg.appendChild(group.cloneNode(true));
+                }
+            });
+
+            printSeatingDocument(printableSvg, config.label + ' - Zone ' + zone, partialPrintOptions());
+        }
+
+        // Shared printing engine for NCH sections and Kevin Barry zones.
+        function printSeatingDocument(printableSvg, sectionName, options = {}) {
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                message('Please allow pop-ups to print the seating plan.');
+                return;
+            }
+            preparePrintableSeatingSvg(printableSvg);
+            printableSvg.setAttribute('xmlns', NS);
+            printableSvg.setAttribute('width', '100%');
+            printableSvg.setAttribute('height', 'auto');
+
+            const page = printWindow.document;
+            page.title = 'NSCI - ' + sectionName + ' Seating Plan';
+
+            const style = page.createElement('style');
+            const paper = options.paper || 'A4 landscape';
+            const margin = options.margin || '10mm';
+            const headingSize = options.headingSize || '20pt';
+            const headingGap = options.headingGap || '10mm';
+            const maxSvgHeight = options.maxSvgHeight || '165mm';
+            style.textContent = `
+                @page { size: ${paper}; margin: ${margin}; }
+                body { margin: 0; font-family: Arial, sans-serif; color: #172238; }
+                h1 { text-align: center; font-size: ${headingSize}; margin: 0 0 ${headingGap}; }
+                svg { display: block; width: 100%; height: auto; max-height: ${maxSvgHeight}; }
+                .seat rect { stroke: #8795a5; stroke-width: 1.1; }
+                .seat text { font-family: Arial, sans-serif; }
+                .seat.selected rect { stroke: #8795a5; stroke-width: 1.1; }
+                @media print {
+                    body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+                }
+            `;
+            page.head.appendChild(style);
+
+            const heading = page.createElement('h1');
+            heading.textContent = 'NSCI — ' + sectionName + ' Seating Plan';
+            page.body.appendChild(heading);
+            page.body.appendChild(page.importNode(printableSvg, true));
+            printWindow.focus();
+            printWindow.print();
+        }
+
+        // All NCH sections share the same print layout and options.
+        function printNchSection(svgContainerId, sectionName) {
+            const originalSvg = el(svgContainerId).querySelector('svg');
+            if (!originalSvg) {
+                message(sectionName + ' seating diagram is not available.');
+                return;
+            }
+            printSeatingDocument(originalSvg.cloneNode(true), sectionName, partialPrintOptions());
+        }
+
+        // Whole NCH on one A3 sheet. Keep the established 64-unit
+        // middle-section row alignment and the three existing SVGs.
+        function printNchFullA3() {
+            const blocks = [
+                { root: 'nchRedSvg', x: 0, y: 0 },
+                { root: 'nchCentreSvg', x: 628, y: 64 },
+                { root: 'nchGreenSvg', x: 1564, y: 0 }
+            ];
+            const paper = document.createElementNS(NS, 'svg');
+            paper.setAttribute('viewBox', '0 0 2172 450');
+            paper.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+            for (const block of blocks) {
+                const original = el(block.root).querySelector('svg');
+                if (!original) {
+                    message('National Concert Hall seating diagram is not available.');
+                    return;
+                }
+                const group = document.createElementNS(NS, 'g');
+                group.setAttribute('transform',
+                    `translate(${block.x} ${block.y})`);
+                for (const child of Array.from(original.children)) {
+                    group.appendChild(child.cloneNode(true));
+                }
+                paper.appendChild(group);
+            }
+            printSeatingDocument(paper,
+                'National Concert Hall — Full Room', fullRoomA3Options('landscape', true));
+        }
+
+        function printStudioFullA3() {
+            const config = activeStudioConfiguration();
+            const original = el('studioSvg').querySelector('svg');
+            if (!original) {
+                message('Studio seating diagram is not available.');
+                return;
+            }
+            const orientation = el('performanceSpace').value ===
+                'studio-portrait' ? 'portrait' : 'landscape';
+            printSeatingDocument(original.cloneNode(true),
+                config.label + ' — Full Room',
+                fullRoomA3Options(orientation));
+        }
+
+        function printStudioBlock(block) {
+            const config = activeStudioConfiguration();
+            const original = el('studioSvg').querySelector('svg');
+            if (!original) {
+                message('Studio seating diagram is not available.');
+                return;
+            }
+            const positions = config.geometry.filter(p => p.block === block);
+            const minX = Math.min(...positions.map(p => p.x));
+            const maxX = Math.max(...positions.map(p => p.x)) + STUDIO_SEAT_WIDTH;
+            const minY = Math.min(...positions.map(p => p.y));
+            const maxY = Math.max(...positions.map(p => p.y)) + STUDIO_SEAT_HEIGHT;
+            const sidePadding = 24;
+            const topPadding = 42;
+            const bottomPadding = 22;
+            const paper = document.createElementNS(NS, 'svg');
+            paper.setAttribute('viewBox', [
+                minX - sidePadding, minY - topPadding,
+                maxX - minX + 2 * sidePadding,
+                maxY - minY + topPadding + bottomPadding
+            ].join(' '));
+            paper.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+            const ids = new Set(positions.map(p => p.id));
+            original.querySelectorAll('.seat[data-seat-id]').forEach(group => {
+                if (ids.has(group.getAttribute('data-seat-id'))) {
+                    paper.appendChild(group.cloneNode(true));
+                }
+            });
+            const orientation = el('performanceSpace').value ===
+                'studio-portrait' ? 'portrait' : 'landscape';
+            printSeatingDocument(paper,
+                config.label + (block === 1 ? ' — Left Block' : ' — Right Block'),
+                partialPrintOptions(orientation));
+        }
+
+        el('printRedBtn').addEventListener('click', () =>
+            printNchSection('nchRedSvg', 'Red Section')
+        );
+        el('printCentreBtn').addEventListener('click', () =>
+            printNchSection('nchCentreSvg', 'Blue/Orange Section')
+        );
+        el('printGreenBtn').addEventListener('click', () =>
+            printNchSection('nchGreenSvg', 'Green Section')
+        );
+
+        el('printNchFullA3Btn').addEventListener('click', printNchFullA3);
+        el('printKbrFullA3Btn').addEventListener('click', printKbrFullA3);
+        el('printStudioFullA3Btn').addEventListener('click', printStudioFullA3);
+        el('printStudioLeftBtn').addEventListener('click', () => printStudioBlock(1));
+        el('printStudioRightBtn').addEventListener('click', () => printStudioBlock(2));
+
+        [1, 2, 3, 4].forEach(zone => {
+            el('printKbrZone' + zone + 'Btn').addEventListener(
+                'click', () => printKbrZone(zone)
+            );
+        });
+
+        divisionsUI(); filtersUI(); applyLayout(); render();
+
+        // TEMPORARY DEVELOPMENT BYPASS
+        (async function () {
+            document.getElementById('seatingLoginPanel').hidden = true;
+            document.getElementById('seatingToolbar').hidden = false;
+            document.getElementById('seatingWorkspace').hidden = false;
+
+            try {
+                const project = document.getElementById('projectSelect').value;
+                const liveSingers = await fetchProjectSingers(project, '');
+
+                liveProjectSingers = liveSingers;
+
+                participatingProjectSingers = liveSingers.filter(
+                    singer => singer.participation === 1 ||
+                        singer.participation === 2
+                );
+
+                const duplicates = findDuplicateChoirNumbers(liveSingers);
+                const missingIds = liveSingers.filter(s => !s.memberId);
+
+                if (duplicates.length || missingIds.length) {
+                    throw new Error('Live singer data validation failed.');
+                }
+
+                applyLiveProjectSingers(participatingProjectSingers);
+
+                console.log(
+                    'Development mode: loaded',
+                    participatingProjectSingers.length,
+                    'eligible singers from',
+                    project
+                );
+            } catch (error) {
+                console.error('Development mode:', error);
+            }
+        })();
+
+        // Show partial-print settings only when the manager asks for them.
+        el('partialPrintToggle').addEventListener('click', function () {
+            const controls = el('partialPrintControls');
+            controls.hidden = !controls.hidden;
+            this.setAttribute('aria-expanded', String(!controls.hidden));
+        });
+
+        // Close dropdown menus when clicking outside them.
+        const autoCloseMenus = [
+            document.getElementById('divisionControls').closest('details'),
+            document.getElementById('printOptionsMenu')
+        ];
+
+        document.addEventListener('click', function (event) {
+            autoCloseMenus.forEach(menu => {
+                if (menu.open && !menu.contains(event.target)) {
+                    menu.open = false;
+                }
+            });
+        });
+
+    </script>
+</body>
+
+</html>
