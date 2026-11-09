@@ -481,23 +481,6 @@
             padding: 14px
         }
 
-        .settings-content #divisionControls {
-            display: grid;
-            gap: 8px;
-            margin-top: 12px
-        }
-
-        .settings-content #divisionControls label {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px
-        }
-
-        .settings-content #divisionControls select {
-            min-width: 110px
-        }
-
         /* Read-only work name retrieved from H2 of the selected project sheet. */
         .project-work-name {
             display: inline-flex;
@@ -868,15 +851,6 @@
             </div>
         </details>
 
-        <details class="settings-menu">
-            <summary>Voice subdivisions</summary>
-            <div class="settings-content">
-                <div class="muted">Choose subdivisions separately for each voice. Normally leave all four at one group.
-                </div>
-                <div id="divisionControls"></div>
-            </div>
-        </details>
-
         <!-- Seating plan magnification controls -->
 
         <div class="zoom-toolbar-panel">
@@ -1046,6 +1020,9 @@
         // Apply validated live singer records to the seating application.
         function applyLiveProjectSingers(singerList) {
             singers = [...singerList];
+            // Project changes must not carry forward the previous project's filters.
+            activeGroups.clear();
+            filtersUI();
 
             byNumber = Object.fromEntries(
                 singers.map(singer => [singer.number, singer])
@@ -1777,8 +1754,6 @@
             tall: 25
         };
 
-        const DIVS = { S: 2, A: 2, T: 2, B: 2 };
-
         // Singer records are loaded from the selected Google Sheet project.
         let singers = [];
         let byNumber = {};
@@ -1794,6 +1769,7 @@
                 number,
                 name,
                 voice: group.charAt(0),
+                group: group || group.charAt(0),
                 subdivision: Number(group.slice(1)) || 1,
                 height: String(row.height).toLowerCase(),
                 timbre: String(row.timbre).toLowerCase(),
@@ -1868,13 +1844,11 @@
             return element;
         }
 
-        function part(num) {
-            return Math.min(DIVS[num.voice], num.subdivision);
-        }
-
+        // Token colour follows the spreadsheet subdivision, never a UI setting.
         function shade(s) {
-            return PALETTE[s.voice][part(s) - 1];
-
+            const tones = PALETTE[s.voice] || PALETTE.S;
+            const index = Math.max(0, Math.min(tones.length - 1, s.subdivision - 1));
+            return tones[index];
         }
 
         function seatFill(s) {
@@ -1956,7 +1930,7 @@
                     'text-anchor': 'middle',
                     fill: '#172238'
                 },
-                    person.voice + (DIVS[person.voice] > 1 ? part(person) : '')));
+                    person.group));
             }
 
             group.classList.toggle('selected', selected?.kind === 'seat' && selected.id === seat.id);
@@ -2232,7 +2206,7 @@
             e.style.setProperty('--tone', shade(s));
 
             e.innerHTML =
-                `<small>${s.voice}${DIVS[s.voice] > 1 ? part(s) : ''}</small>` +
+                `<small>${s.group}</small>` +
                 `<strong>${Number(s.number)}</strong>`;
 
             // White timbre arc on the left-hand side of the token.
@@ -2288,7 +2262,7 @@
             const q = el('search').value.trim(), box = el('tokens');
             box.replaceChildren();
             singers.filter(s => !Object.values(allocations).includes(s.number) && !activeGroups.has(
-                s.voice + (DIVS[s.voice] > 1 ? part(s) : '')
+                s.group
             ) &&
                 s.number.includes(q)).forEach(s => {
                     let b = document.createElement('button');
@@ -2482,23 +2456,6 @@
             if (history.length > 100) history.shift();
         }
 
-        function divisionsUI() {
-            const holder = el('divisionControls');
-            holder.replaceChildren();
-            VOICES.forEach(v => {
-                let l = document.createElement('label');
-                l.textContent = ({ S: 'Soprano', A: 'Alto', T: 'Tenor', B: 'Bass' })[v];
-                const sel = document.createElement('select');[1, 2, 3].forEach(i => sel.add(new Option(i + ' group' + (i > 1 ? 's' : ''), i)));
-                sel.value = DIVS[v];
-                sel.onchange = () => {
-                    DIVS[v] = Number(sel.value); singers.filter(s => s.voice === v).forEach((s, i) => s.subdivision = i % DIVS[v] + 1);
-                    activeGroups.clear();
-                    filtersUI();
-                    render();
-                }; l.appendChild(sel); holder.appendChild(l);
-            });
-        }
-
         function filterButton(holder, label, on, action) {
             const b = document.createElement('button');
             b.type = 'button';
@@ -2509,36 +2466,28 @@
             holder.appendChild(b);
         }
 
+        // Show only the group labels found in the selected project's sheet.
         function filtersUI() {
             const holder = el('voiceFilters');
             holder.replaceChildren();
 
-            VOICES.forEach(v => {
+            VOICES.forEach(voice => {
+                const groups = [...new Set(
+                    singers.filter(s => s.voice === voice).map(s => s.group)
+                )].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
-                const count = DIVS[v];
-
-                for (let i = 1; i <= count; i++) {
-
-                    const key = count === 1 ? v : v + i;
-
+                groups.forEach(key => {
                     const isActive = !activeGroups.has(key);
-
-                    filterButton(
-                        holder,
-                        key,
-                        isActive,
-                        () => {
-                            if (activeGroups.has(key)) {
-                                activeGroups.delete(key);
-                            } else {
-                                activeGroups.add(key);
-                            }
-
-                            filtersUI();
-                            renderTokens();
+                    filterButton(holder, key, isActive, () => {
+                        if (activeGroups.has(key)) {
+                            activeGroups.delete(key);
+                        } else {
+                            activeGroups.add(key);
                         }
-                    );
-                }
+                        filtersUI();
+                        renderTokens();
+                    });
+                });
             });
         }
 
@@ -3487,10 +3436,9 @@
             );
         });
 
-        divisionsUI();
-filtersUI();
-applyLayout();
-changePerformanceSpace();
+        filtersUI();
+        applyLayout();
+        changePerformanceSpace();
 
         // TEMPORARY DEVELOPMENT BYPASS
         (async function () {
@@ -3538,7 +3486,6 @@ changePerformanceSpace();
 
         // Close dropdown menus when clicking outside them.
         const autoCloseMenus = [
-            document.getElementById('divisionControls').closest('details'),
             document.getElementById('printOptionsMenu')
         ];
 
