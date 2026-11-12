@@ -885,9 +885,17 @@
         <div style="max-width:420px; margin:auto;">
             <h2>Seating Manager Login</h2>
 
-            <label for="seatingUsername">Username</label>
-            <input id="seatingUsername" type="text" autocomplete="username"
-                style="display:block; width:100%; padding:9px; margin:6px 0 14px;">
+            <label for="seatingUsername">Select User</label>
+
+<select id="seatingUsername" required
+    style="display:block; width:100%; padding:9px; margin:6px 0 14px;">
+
+    <option value="" selected disabled>-- Select your name --</option>
+    <option value="Lesley">Lesley</option>
+    <option value="Kevin">Kevin</option>
+    <option value="Cristiano">Cristiano</option>
+
+</select>
 
             <label for="seatingCode">Google Authenticator Code</label>
             <input id="seatingCode" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code"
@@ -1046,10 +1054,10 @@
                 document.getElementById('seatingLoginButton');
 
             if (!username || !/^\d{6}$/.test(code)) {
-                status.textContent =
-                    'Please enter your username and six-digit Authenticator code.';
-                return;
-            }
+    status.textContent =
+        'Please select your name and enter your six-digit Authenticator code.';
+    return;
+}
 
             button.disabled = true;
             status.textContent = 'Signing in...';
