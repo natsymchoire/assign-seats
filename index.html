@@ -2701,24 +2701,29 @@
             render();
         };
 
-        // Temporary development access for permanent seating storage.
-        // The access token is never embedded in the HTML or localStorage.
-        let seatingStorageToken = '';
+        // Use the existing authenticated session for seating storage.
+function getSeatingStorageToken() {
+    if (!seatingSessionToken) {
+        throw new Error('Please sign in again.');
+    }
+    return seatingSessionToken;
+}
 
-        function getSeatingStorageToken() {
-            if (seatingStorageToken) return seatingStorageToken;
+// Three-digit confirmation before saving.
+function confirmSeatingSave() {
+    const random = new Uint32Array(1);
+    crypto.getRandomValues(random);
 
-            const entered = prompt(
-                'Enter the Seating Manager development access token:'
-            );
+    const code = String(100 + (random[0] % 900));
 
-            if (!entered || !entered.trim()) {
-                throw new Error('Access token not entered.');
-            }
+    const entered = prompt(
+        'Are you sure you want to save this seating plan?\n\n' +
+        'Doing so will overwrite the information already saved.\n\n' +
+        'Enter this three-digit confirmation code: ' + code
+    );
 
-            seatingStorageToken = entered.trim();
-            return seatingStorageToken;
-        }
+    return entered !== null && entered.trim() === code;
+}
 
         // Convert the active seating plan from choir numbers
         // to permanent member IDs for Cloudflare storage.
@@ -2776,10 +2781,15 @@
 
         // Save the current project and venue.
         el('saveBtn').onclick = async () => {
-            const button = el('saveBtn');
-            if (button.disabled) return;
+    const button = el('saveBtn');
+    if (button.disabled) return;
 
-            const project = el('projectSelect').value;
+    if (!confirmSeatingSave()) {
+        message('Saving cancelled.');
+        return;
+    }
+
+    const project = el('projectSelect').value;
             const venue = el('performanceSpace').value;
 
             try {
@@ -2808,8 +2818,7 @@
                 const result = await response.json();
 
                 if (!response.ok || !result.success) {
-                    if (response.status === 401) seatingStorageToken = '';
-                    throw new Error(
+                                        throw new Error(
                         result.error || 'Cloudflare save failed.'
                     );
                 }
@@ -2854,8 +2863,7 @@
 
                 const result = await response.json();
 
-                if (!response.ok || !result.success) {
-                    if (response.status === 401) seatingStorageToken = '';
+                if (!response.ok || !result.success) {        
                     throw new Error(
                         result.error || 'Cloudflare retrieval failed.'
                     );
@@ -2943,8 +2951,7 @@
 
                 const saved = await response.json();
 
-                if (!response.ok || !saved.success) {
-                    if (response.status === 401) seatingStorageToken = '';
+                if (!response.ok || !saved.success) {                    
                     throw new Error(
                         saved.error || 'Unable to inspect saved versions.'
                     );
@@ -2998,10 +3005,7 @@
 
                 const result = await restoreResponse.json();
 
-                if (!restoreResponse.ok || !result.success) {
-                    if (restoreResponse.status === 401) {
-                        seatingStorageToken = '';
-                    }
+                if (!restoreResponse.ok || !result.success) {                    
                     throw new Error(
                         result.error || 'Restoration failed.'
                     );
