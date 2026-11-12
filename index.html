@@ -3438,44 +3438,7 @@
 
         filtersUI();
         applyLayout();
-        changePerformanceSpace();
-
-        // TEMPORARY DEVELOPMENT BYPASS
-        (async function () {
-            document.getElementById('seatingLoginPanel').hidden = true;
-            document.getElementById('seatingToolbar').hidden = false;
-            document.getElementById('seatingWorkspace').hidden = false;
-
-            try {
-                const project = document.getElementById('projectSelect').value;
-                const liveSingers = await fetchProjectSingers(project, '');
-
-                liveProjectSingers = liveSingers;
-
-                participatingProjectSingers = liveSingers.filter(
-                    singer => singer.participation === 1 ||
-                        singer.participation === 2
-                );
-
-                const duplicates = findDuplicateChoirNumbers(liveSingers);
-                const missingIds = liveSingers.filter(s => !s.memberId);
-
-                if (duplicates.length || missingIds.length) {
-                    throw new Error('Live singer data validation failed.');
-                }
-
-                applyLiveProjectSingers(participatingProjectSingers);
-
-                console.log(
-                    'Development mode: loaded',
-                    participatingProjectSingers.length,
-                    'eligible singers from',
-                    project
-                );
-            } catch (error) {
-                console.error('Development mode:', error);
-            }
-        })();
+        changePerformanceSpace(
 
         // Show partial-print settings only when the manager asks for them.
         el('partialPrintToggle').addEventListener('click', function () {
